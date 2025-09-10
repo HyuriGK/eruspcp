@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Controle de Terceiro - Fundição Erus</title>
+    <style>
+        :root {
+            --primary-blue: #2c3e50;
+            --secondary-blue: #3498db;
+            --accent-blue: #2980b9;
+            --dark-blue: #1a2530;
+            --light-gray: #ecf0f1;
+            --medium-gray: #bdc3c7;
+            --dark-gray: #7f8c8d;
+            --border-color: #dee2e6;
+            --success-color: #27ae60;
+            --warning-color: #e67e22;
+            --danger-color: #c0392b;
+            --group-row-bg: #f8f9fa;
+            --success-bg: #eafaf1;
+            --success-border: #27ae60;
+            --pending-bg: #fef9e7;
+            --pending-border: #f39c12;
+            --modal-header-bg: #f1f3f5;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; }
+        body { background: var(--light-gray); color: #333; padding: 15px; line-height: 1.4; font-size: 14px; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        /* --- AJUSTE APLICADO AQUI --- */
+        .container { 
+            max-width: 100%; /* Alterado de 95% para 100% */
+            /* margin: 0 auto; <- Removido para não centralizar */
+            background: #fff; 
+            border-radius: 4px; 
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); 
+            overflow: hidden; 
+            border: 1px solid var(--border-color); 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        header { background: var(--primary-blue); color: #fff; padding: 15px 20px; text-align: center; border-bottom: 3px solid var(--secondary-blue); flex-shrink: 0; position: relative; display: flex; justify-content: space-between; align-items: center; }
+        .header-content { flex: 1; text-align: center; }
+        h1 { font-size: 18px; margin-bottom: 3px; letter-spacing: 0.5px; }
+        p.subtitle { margin-top: 4px; color: var(--light-gray); font-size: 12px; }
+        .header-button { padding: 6px 10px; border: 1px solid var(--dark-blue); border-radius: 3px; cursor: pointer; background: var(--secondary-blue); color: #fff; transition: background .15s; font-size: 12px; font-weight: bold; }
+        .header-button:hover { background: var(--accent-blue); }
+        .form-container { padding: 15px; background: #f9f9f9; border-bottom: 1px solid var(--border-color); }
+        .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: flex-end; }
+        .form-group { flex: 1; min-width: 150px; }
+        .form-group label { display: block; font-size: 12px; margin-bottom: 4px; font-weight: bold; color: var(--dark-blue); }
+        .form-group input, .form-group select { width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; background: white; font-family: 'Courier New', monospace; }
+        .controls { padding: 10px 15px; display: flex; gap: 8px; align-items: center; justify-content: space-between; background: var(--light-gray); flex-wrap: wrap; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+        .left-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        button { padding: 6px 10px; border: 1px solid var(--dark-blue); border-radius: 3px; cursor: pointer; background: var(--secondary-blue); color: #fff; transition: background .15s; font-size: 12px; font-weight: bold; }
+        button:hover { background: var(--accent-blue); }
+        .btn-add { background: var(--success-color); border-color: #1e8449; width: 100%; }
+        .btn-add:hover { background: #229954; }
+        .btn-danger { background: var(--danger-color); border-color: #922b21; }
+        .btn-danger:hover { background: #a93226; }
+        
+        /* --- AJUSTE FINAL DA TABELA PRINCIPAL --- */
+        .table-container {
+            overflow-y: auto; /* Permite a rolagem vertical DENTRO deste container */
+            flex: 1;          /* Faz o container crescer para ocupar o espaço disponível */
+        }
+        
+        table { min-width: 100%; border-collapse: collapse; font-size: 12px; }
+        
+        th, td { 
+            padding: 8px 12px; 
+            border-bottom: 1px solid var(--border-color); 
+            text-align: left; 
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        th.numeric, td.numeric { text-align: right; }
+        
+        thead tr.header-row th { background: var(--dark-blue); color: white; position: sticky; top: 0; z-index: 20; font-weight: 600; font-size: 12px; }
+        thead tr.filter-row th { background: var(--medium-gray); padding: 6px; position: sticky; top: 35px; z-index: 15; }
+        thead tr.filter-row input { width: 100%; padding: 4px 6px; box-sizing: border-box; border-radius: 2px; border: 1px solid var(--border-color); font-size: 11px; }
+        
+        .group-row { 
+            background-color: var(--group-row-bg); 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            border-left: 4px solid transparent;
+        }
+        .group-row:hover { 
+            background-color: #e9ecef; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left-color: var(--secondary-blue);
+        }
+
+        .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; white-space: nowrap; }
+        .status-completo { background-color: var(--success-bg); color: var(--success-border); border: 1px solid var(--success-border); }
+        .status-pendente { background-color: var(--pending-bg); color: var(--pending-border); border: 1px solid var(--pending-border); }
+        
+        /* ESTILOS DO MODAL (POPUP) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000; padding: 20px;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+
+        .modal-content {
+            background: #fff;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 95vw;
+            height: 90vh;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+
+        .modal-header {
+            padding: 15px 25px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--modal-header-bg);
+            flex-shrink: 0;
+        }
+        .modal-header h2 { font-size: 18px; color: var(--primary-blue); }
+        .modal-close {
+            font-size: 28px; font-weight: bold; cursor: pointer;
+            color: var(--dark-gray); line-height: 1; padding: 5px;
+            border-radius: 50%;
+            transition: color 0.2s, background-color 0.2s;
+        }
+        .modal-close:hover { color: #000; background-color: #e9ecef; }
+        
+        .modal-table-container { flex: 1; overflow: auto; }
+        .modal-table-container table { font-size: 11px; }
+        .modal-table-container th { background-color: #f8f9fa; }
+        .modal-table-container th, .modal-table-container td { padding: 8px 12px; }
+        .modal-table-container tbody tr:hover { background-color: #f1f3f5; }
+        
+        .modal-footer {
+            padding: 15px 25px;
+            border-top: 1px solid var(--border-color);
+            background: var(--modal-header-bg);
+            display: flex; justify-content: flex-end; align-items: center;
+            gap: 30px; font-size: 12px; font-weight: bold;
+            flex-shrink: 0;
+        }
+        .footer-stat { color: var(--primary-blue); }
+        .footer-stat span { color: #000; font-weight: normal; margin-left: 8px; }
+
+        .delete-action { color: var(--danger-color); font-weight: bold; font-size: 16px; cursor: pointer; padding: 0 5px; display: inline-block; line-height: 1; }
+        .delete-action:hover { color: #e74c3c; }
+
+        .footer { padding: 10px 15px; background: var(--primary-blue); display: flex; justify-content: space-between; align-items: center; border-top: 3px solid var(--secondary-blue); color: white; flex-shrink: 0; }
+        .status { font-size: 12px; color: #fff; font-weight: bold; }
+        .nav-buttons { position: fixed; right: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 100; }
+        .nav-button { width: 50px; height: 50px; border-radius: 50%; background-color: var(--secondary-blue); color: white; border: none; font-size: 20px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+        .nav-button:hover { background-color: var(--accent-blue); transform: translateY(-3px); }
+        .nav-button.hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>CONTROLE DE TERCEIRO - FUNDIÇÃO ERUS</h1>
+                <p class="subtitle">Registro de envio e retorno de peças</p>
+            </div>
+            <button class="header-button" onclick="redirectToLink()">Sistema</button>
+        </header>
+
+        <div class="form-container">
+            <div class="form-row">
+                <div class="form-group" style="flex: 0.5; min-width: 100px;"> <label for="inputCarga">CARGA</label> <input type="text" id="inputCarga" placeholder="Carga"> </div>
+                <div class="form-group" style="flex: 0.5; min-width: 120px;"> <label for="inputData">DATA</label> <input type="date" id="inputData"> </div>
+                <div class="form-group" style="flex: 0.5; min-width: 120px;"> <label for="inputCodigo">CÓDIGO</label> <input type="text" id="inputCodigo" placeholder="Código" style="text-transform: uppercase;"> </div>
+                <div class="form-group" style="flex: 1.5; min-width: 250px;"> <label for="inputDescricao">DESCRIÇÃO</label> <input type="text" id="inputDescricao" placeholder="Descrição" style="text-transform: uppercase;"> </div>
+                <div class="form-group" style="flex: 1; min-width: 150px;"> <label for="inputCliente">CLIENTE</label> <input type="text" id="inputCliente" placeholder="Cliente" style="text-transform: uppercase;"> </div>
+                <div class="form-group" style="flex: 1; min-width: 150px;">
+                    <label for="inputTerceiro">TERCEIRO</label>
+                    <select id="inputTerceiro">
+                        <option value="BSP REBARBAÇÃO">BSP REBARBAÇÃO</option>
+                        <option value="JM REBARBAÇÃO">JM REBARBAÇÃO</option>
+                        <option value="VG REBARBAÇÃO">VG REBARBAÇÃO</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group" style="flex: 0.5; min-width: 100px;"> <label for="inputPesoUn">PESO UN. (kg)</label> <input type="number" id="inputPesoUn" placeholder="0.00" min="0" step="0.01"> </div>
+                <div class="form-group" style="flex: 0.5; min-width: 80px;"> <label for="inputQuantidade">QTD. TOTAL</label> <input type="number" id="inputQuantidade" placeholder="0" min="1" oninput="atualizarQuantidades('total')"> </div>
+                <div class="form-group" style="flex: 0.5; min-width: 90px;"> <label for="inputQtdEscariar">QTD. A ESCARIAR</label> <input type="number" id="inputQtdEscariar" placeholder="0" min="0" oninput="atualizarQuantidades('escariar')"> </div>
+                <div class="form-group" style="flex: 0.5; min-width: 90px;"> <label for="inputQtdRebarba">QTD. SÓ REBARBAR</label> <input type="number" id="inputQtdRebarba" placeholder="0" min="0" oninput="atualizarQuantidades('rebarba')"> </div>
+                <div class="form-group" style="flex: 1.5; min-width: 200px;"> <label for="inputObservacoes">OBSERVAÇÕES</label> <input type="text" id="inputObservacoes" placeholder="Observações" style="text-transform: uppercase;"> </div>
+                <div class="form-group" style="flex: 0.8; min-width: 120px;"> <button class="btn-add" onclick="adicionarRegistro()">Adicionar</button> </div>
+            </div>
+        </div>
+
+        <div class="controls" id="controlsPanel">
+            <div class="left-controls">
+                <button class="btn-danger" onclick="confirmAndClear()">Apagar Tudo</button>
+                <button onclick="gerarCargaPDF()">Gerar Carga</button>
+            </div>
+            <div>
+                <button class="btn-edit" id="editBtn" onclick="toggleEditMode()">Editar</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="terceiroTable">
+                <thead>
+                    <tr class="header-row">
+                        <th>CARGA</th>
+                        <th>DATA</th>
+                        <th>TERCEIRO</th>
+                        <th class="numeric">PESO TOTAL (KG)</th>
+                        <th class="numeric">QTD TOTAL</th>
+                        <th class="numeric">TOTAL (R$)</th>
+                        <th>STATUS</th>
+                    </tr>
+                    <tr class="filter-row">
+                        <th><input placeholder="Filtrar"/></th>
+                        <th><input placeholder="Filtrar"/></th>
+                        <th><input placeholder="Filtrar"/></th>
+                        <th><input placeholder="Filtrar"/></th>
+                        <th><input placeholder="Filtrar"/></th>
+                        <th><input placeholder="Filtrar"/></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <div class="status">Total de Cargas: <strong id="totalRegistros">0</strong></div>
+        </div>
+    </div>
+    
+    <div class="nav-buttons">
+        <button id="goToControlsBtn" class="nav-button hidden" title="Ir para controles">↓</button>
+        <button id="backToTopBtn" class="nav-button hidden" title="Voltar ao topo">↑</button>
+    </div>
+
+    <div id="cargaModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Detalhes da Carga</h2>
+                <span class="modal-close" onclick="hideCargaDetails()">&times;</span>
+            </div>
+            <div id="modalTableContainer" class="modal-table-container">
+                </div>
+            <div id="modalFooter" class="modal-footer">
+                </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        let registros = [];
+        let recebidos = {};
+        
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+            const options = { method, headers: { 'Content-Type': 'application/json' } };
+            if (data) options.body = JSON.stringify(data);
+            try {
+                const response = await fetch(`/api/${endpoint}`, options);
+                if (!response.ok) throw new Error(`Erro na requisição: ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.error('Erro na comunicação com o servidor:', error);
+                alert('Erro na comunicação com o servidor. Verifique se o servidor está rodando.');
+                throw error;
+            }
+        }
+        function formatNumber(value) { return Number(value || 0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+        function formatCurrency(value) { return Number(value || 0).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}); }
+        function formatDate(isoDate) {
+            if (!isoDate || !isoDate.includes('-')) return '';
+            const [year, month, day] = isoDate.split('T')[0].split('-');
+            return `${day}/${month}/${year}`;
+        }
+        function parseNumberSafe(text) {
+            const s = String(text || '').trim().replace(/\./g, '').replace(/,/g, '.');
+            const num = parseFloat(s);
+            return isNaN(num) ? 0 : num;
+        }
+        function calcularValorItem(registro) {
+            const terceiro = registro.terceiro.toUpperCase();
+            if (terceiro === 'BSP REBARBAÇÃO') {
+                const PRECO_ESCARIAR = 1.10;
+                const PRECO_REBARBA = 0.90;
+                const valorEscariar = (registro.quant_escariar || 0) * (registro.peso || 0) * PRECO_ESCARIAR;
+                const valorRebarba = (registro.quant_rebarba || 0) * (registro.peso || 0) * PRECO_REBARBA;
+                return valorEscariar + valorRebarba;
+            } else if (terceiro === 'VG REBARBAÇÃO') {
+                const PRECO_UNICO = 1.00;
+                const quantidadeTotal = (registro.quant_escariar || 0) + (registro.quant_rebarba || 0);
+                return quantidadeTotal * (registro.peso || 0) * PRECO_UNICO;
+            }
+            return 0;
+        }
+        function atualizarQuantidades(origem) {
+            const totalInput = document.getElementById('inputQuantidade'), escariarInput = document.getElementById('inputQtdEscariar'), rebarbaInput = document.getElementById('inputQtdRebarba');
+            let total = parseInt(totalInput.value) || 0, escariar = parseInt(escariarInput.value) || 0, rebarba = parseInt(rebarbaInput.value) || 0;
+            if (origem === 'total') { rebarba = (escariar > 0) ? total - escariar : total; if (rebarba < 0) { rebarba = 0; escariar = total; } }
+            else if (origem === 'escariar') { if (escariar > total) escariar = total; rebarba = total - escariar; }
+            else if (origem === 'rebarba') { if (rebarba > total) rebarba = total; escariar = total - rebarba; }
+            totalInput.value = total; escariarInput.value = escariar; rebarbaInput.value = rebarba;
+        }
+
+        async function adicionarRegistro() {
+            const total = parseInt(document.getElementById('inputQuantidade').value) || 0, escariar = parseInt(document.getElementById('inputQtdEscariar').value) || 0, rebarba = parseInt(document.getElementById('inputQtdRebarba').value) || 0;
+            if (total !== (escariar + rebarba)) { alert('A soma das quantidades deve ser igual à Qtd. Total.'); return; }
+            const registro = {
+                carga: document.getElementById('inputCarga').value.trim().toUpperCase(), codigo: document.getElementById('inputCodigo').value.toUpperCase(),
+                descricao: document.getElementById('inputDescricao').value.toUpperCase(), peso: parseNumberSafe(document.getElementById('inputPesoUn').value),
+                quant: total, quant_escariar: escariar, quant_rebarba: rebarba, cliente: document.getElementById('inputCliente').value.toUpperCase(),
+                terceiro: document.getElementById('inputTerceiro').value.toUpperCase(), observacoes: document.getElementById('inputObservacoes').value.toUpperCase(),
+                data: document.getElementById('inputData').value || new Date().toISOString().split('T')[0], tipo: "terceiro"
+            };
+            registro.valor = calcularValorItem(registro);
+            if (!registro.carga || !registro.codigo || !registro.terceiro || registro.quant <= 0) { alert('Os campos Carga, Código, Terceiro e Qtd. Total são obrigatórios.'); return; }
+            
+            const response = await apiRequest('registros', 'POST', registro);
+            if (response.success) {
+                registro.id = response.id;
+                registros.unshift(registro);
+                carregarDados();
+                limparFormulario();
+                alert('Registro adicionado com sucesso!');
+            } else { alert('Erro ao adicionar registro: ' + (response.error || 'Erro desconhecido')); }
+        }
+        
+        async function carregarDados() {
+            try {
+                const data = await apiRequest('registros');
+                registros = data.filter(r => r.tipo === 'terceiro').sort((a, b) => new Date(b.data) - new Date(a.data));
+                const recebidosData = await apiRequest('recebidos');
+                recebidos = {};
+                recebidosData.forEach(item => {
+                    if (!recebidos[item.carga]) recebidos[item.carga] = [];
+                    recebidos[item.carga].push(item);
+                });
+                renderTable();
+            } catch (error) { console.error('Erro ao carregar dados:', error); }
+        }
+        
+        function renderTable() {
+            const tbody = document.querySelector('#terceiroTable tbody');
+            tbody.innerHTML = '';
+            const groupedByCarga = registros.reduce((acc, registro) => {
+                if (!acc[registro.carga]) acc[registro.carga] = [];
+                acc[registro.carga].push(registro);
+                return acc;
+            }, {});
+
+            for (const carga in groupedByCarga) {
+                const items = groupedByCarga[carga];
+                const primeiroItem = items[0];
+                const totalQuant = items.reduce((sum, item) => sum + item.quant, 0);
+                const totalPeso = items.reduce((sum, item) => sum + (item.quant * item.peso), 0);
+                const totalValor = items.reduce((sum, item) => sum + (item.valor || 0), 0);
+                
+                const recebidosCount = recebidos[carga] ? recebidos[carga].length : 0;
+                const totalItemsCount = items.length;
+                let statusHtml;
+                if (recebidosCount === totalItemsCount && totalItemsCount > 0) {
+                    statusHtml = `<span class="status-badge status-completo">Completo</span>`;
+                } else {
+                    statusHtml = `<span class="status-badge status-pendente">${recebidosCount}/${totalItemsCount} Recebidos</span>`;
+                }
+
+                const groupRow = document.createElement('tr');
+                groupRow.className = 'group-row';
+                groupRow.dataset.cargaId = carga;
+                groupRow.onclick = () => showCargaDetails(carga);
+                groupRow.innerHTML = `
+                    <td>${carga}</td>
+                    <td>${formatDate(primeiroItem.data)}</td>
+                    <td title="${primeiroItem.terceiro}">${primeiroItem.terceiro}</td>
+                    <td class="numeric">${formatNumber(totalPeso)}</td>
+                    <td class="numeric">${totalQuant}</td>
+                    <td class="numeric">${formatCurrency(totalValor)}</td>
+                    <td>${statusHtml}</td>
+                `;
+                tbody.appendChild(groupRow);
+            }
+            document.getElementById('totalRegistros').textContent = Object.keys(groupedByCarga).length;
+            applyColumnFilters();
+        }
+
+        async function excluirRegistro(id) {
+            if (!confirm('Tem certeza que deseja excluir este registro?')) return;
+            const response = await apiRequest('delete', 'POST', { id });
+            if (response.success) {
+                hideCargaDetails();
+                await carregarDados();
+                alert('Registro excluído com sucesso!');
+            } else { alert('Erro ao excluir registro: ' + (response.error || 'Erro desconhecido')); }
+        }
+        
+        async function toggleRecebido(id, carga, isChecked) {
+            const response = await apiRequest('recebidos', 'POST', { id, carga, checked: isChecked });
+            if (response.success) { 
+                await carregarDados();
+                showCargaDetails(carga);
+            } else { 
+                alert('Erro ao atualizar status de recebimento.'); 
+                document.querySelector(`#cargaModal [data-id="${id}"] input[type="checkbox"]`).checked = !isChecked; 
+            }
+        }
+
+        function limparFormulario() {
+            document.getElementById('inputCarga').value = ''; document.getElementById('inputData').valueAsDate = new Date();
+            document.getElementById('inputCodigo').value = ''; document.getElementById('inputDescricao').value = '';
+            document.getElementById('inputPesoUn').value = ''; document.getElementById('inputQuantidade').value = '';
+            document.getElementById('inputQtdEscariar').value = ''; document.getElementById('inputQtdRebarba').value = '';
+            document.getElementById('inputCliente').value = ''; document.getElementById('inputTerceiro').value = 'BSP REBARBAÇÃO';
+            document.getElementById('inputObservacoes').value = ''; document.getElementById('inputCarga').focus();
+        }
+        
+        function applyColumnFilters() {
+            const filters = Array.from(document.querySelectorAll('#terceiroTable > thead .filter-row input')).map(i => i.value.trim().toUpperCase());
+            document.querySelectorAll('#terceiroTable > tbody .group-row').forEach(row => {
+                let visible = true;
+                const cells = row.getElementsByTagName('td');
+                for (let i = 0; i < filters.length; i++) {
+                    if (filters[i] && (!cells[i] || !cells[i].textContent.toUpperCase().includes(filters[i]))) {
+                        visible = false; break;
+                    }
+                }
+                row.style.display = visible ? '' : 'none';
+            });
+        }
+        
+        async function confirmAndClear() {
+            const pass = prompt('Digite a senha para apagar TODOS os registros:');
+            if (pass !== 'CONFIRMAR') { if(pass !== null) alert('Senha incorreta.'); return; }
+            if (!confirm('CONFIRMAR APAGAMENTO TOTAL? Esta ação não pode ser desfeita.')) return;
+            for (const id of registros.map(r => r.id)) { await apiRequest('delete', 'POST', { id }); }
+            carregarDados(); alert('Todos os registros de terceiro foram apagados.');
+        }
+
+        function toggleEditMode() { alert("A edição direta na tabela foi desativada. Exclua e cadastre o item novamente para corrigir."); }
+        function redirectToLink() { window.location.href = 'dashboard.html'; }
+        
+        function gerarCargaPDF() {
+            const cargaNumero = prompt("Digite o número da Carga para gerar o PDF:");
+            if (!cargaNumero) return;
+            const cargaNumeroFormatado = cargaNumero.trim().toUpperCase();
+            const registrosDaCarga = registros.filter(r => r.carga === cargaNumeroFormatado);
+            if (registrosDaCarga.length === 0) { alert(`Nenhum registro para a Carga nº ${cargaNumeroFormatado}.`); return; }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
+            const primeiroRegistro = registrosDaCarga[0];
+            doc.setFillColor(44, 62, 80);
+            doc.rect(0, 0, doc.internal.pageSize.getWidth(), 30, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text("RELATÓRIO DE ENVIO - FUNDIÇÃO ERUS", doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+            doc.setTextColor(236, 240, 241); doc.setFontSize(12);
+            doc.text("Controle de Terceiro", doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+            doc.setTextColor(51, 51, 51); doc.setFontSize(12);
+            doc.text(`Número da Carga: ${cargaNumeroFormatado}`, 14, 40);
+            doc.text(`Terceiro: ${primeiroRegistro.terceiro}`, 14, 46);
+            doc.text(`Data da Carga: ${formatDate(primeiroRegistro.data)}`, 14, 52);
+            doc.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}`, doc.internal.pageSize.getWidth() - 14, 40, { align: 'right' });
+            const headers = [['CÓDIGO', 'DESCRIÇÃO', 'PESO UN.', 'QTD TOTAL', 'QTD ESCARIAR', 'QTD REBARBAR', 'CLIENTE', 'TOTAL (R$)']];
+            const data = registrosDaCarga.map(r => [ r.codigo, r.descricao, formatNumber(r.peso), r.quant, r.quant_escariar || 0, r.quant_rebarba || 0, r.cliente, formatCurrency(r.valor || 0) ]);
+            doc.autoTable({ startY: 60, head: headers, body: data, theme: 'striped', headStyles: { fillColor: [44, 62, 80] }, alternateRowStyles: { fillColor: [248, 249, 249] } });
+            const totalPecas = registrosDaCarga.reduce((sum, r) => sum + r.quant, 0);
+            const pesoTotal = registrosDaCarga.reduce((sum, r) => sum + (r.quant * r.peso), 0);
+            const valorTotalNota = registrosDaCarga.reduce((sum, r) => sum + (r.valor || 0), 0);
+            let finalY = doc.autoTable.previous.finalY + 10;
+            doc.setFontSize(12); doc.setFont('helvetica', 'bold');
+            doc.text('RESUMO GERAL:', 14, finalY);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Quantidade Total de Peças: ${totalPecas}`, 14, finalY + 6);
+            doc.text(`Peso Total da Carga: ${formatNumber(pesoTotal)} kg`, 14, finalY + 12);
+            doc.setFont('helvetica', 'bold'); doc.setTextColor(41, 128, 185);
+            doc.text(`VALOR TOTAL DA NOTA: ${formatCurrency(valorTotalNota)}`, 14, finalY + 18);
+            doc.save(`Carga_${cargaNumeroFormatado}.pdf`);
+        }
+
+        function showCargaDetails(carga) {
+            const modal = document.getElementById('cargaModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalTableContainer = document.getElementById('modalTableContainer');
+            const modalFooter = document.getElementById('modalFooter');
+
+            modalTitle.innerHTML = `Detalhes da Carga: <span style="color:var(--secondary-blue);">${carga}</span>`;
+            const items = registros.filter(r => r.carga === carga);
+
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr class="header-row">
+                            <th>DATA</th><th>CÓDIGO</th><th>DESCRIÇÃO</th><th class="numeric">PESO UN.</th>
+                            <th class="numeric">QTD TOTAL</th><th class="numeric">QTD ESCARIAR</th><th class="numeric">QTD REBARBAR</th>
+                            <th>CLIENTE</th><th class="numeric">VALOR UN.</th><th class="numeric">TOTAL (R$)</th><th>RECEBIDO</th><th>AÇÕES</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            
+            items.forEach(registro => {
+                const isRecebido = recebidos[registro.carga]?.some(item => item.id === registro.id);
+                const valorUnitario = registro.quant > 0 ? (registro.valor || 0) / registro.quant : 0;
+                tableHTML += `
+                    <tr data-id="${registro.id}" data-parent-carga="${registro.carga}">
+                        <td>${formatDate(registro.data)}</td>
+                        <td>${registro.codigo}</td>
+                        <td>${registro.descricao}</td>
+                        <td class="numeric">${formatNumber(registro.peso)}</td>
+                        <td class="numeric">${registro.quant}</td>
+                        <td class="numeric">${registro.quant_escariar || 0}</td>
+                        <td class="numeric">${registro.quant_rebarba || 0}</td>
+                        <td>${registro.cliente}</td>
+                        <td class="numeric">${formatCurrency(valorUnitario)}</td>
+                        <td class="numeric">${formatCurrency(registro.valor || 0)}</td>
+                        <td style="text-align:center;"><input type="checkbox" onchange="toggleRecebido(${registro.id}, '${registro.carga}', this.checked)" ${isRecebido ? 'checked' : ''}></td>
+                        <td style="text-align:center;"><span class="delete-action" title="Excluir Registro" onclick="excluirRegistro(${registro.id});">X</span></td>
+                    </tr>`;
+            });
+
+            tableHTML += `</tbody></table>`;
+            modalTableContainer.innerHTML = tableHTML;
+            
+            const totalQuant = items.reduce((sum, item) => sum + item.quant, 0);
+            const totalPeso = items.reduce((sum, item) => sum + (item.quant * item.peso), 0);
+            const totalValor = items.reduce((sum, item) => sum + (item.valor || 0), 0);
+            modalFooter.innerHTML = `
+                <div class="footer-stat">QTD TOTAL: <span>${totalQuant}</span></div>
+                <div class="footer-stat">PESO TOTAL: <span>${formatNumber(totalPeso)} kg</span></div>
+                <div class="footer-stat">VALOR TOTAL: <span>${formatCurrency(totalValor)}</span></div>
+            `;
+
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('visible'), 10);
+        }
+
+        function hideCargaDetails() {
+            const modal = document.getElementById('cargaModal');
+            modal.classList.remove('visible');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                carregarDados();
+            }, 300);
+        }
+        
+        document.addEventListener('DOMContentLoaded', function(){
+            carregarDados();
+            document.querySelectorAll('#terceiroTable > thead .filter-row input').forEach(input => input.addEventListener('input', applyColumnFilters));
+            document.getElementById('goToControlsBtn').addEventListener('click', () => document.getElementById('controlsPanel').scrollIntoView({ behavior: 'smooth' }));
+            document.getElementById('backToTopBtn').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+            window.addEventListener('scroll', () => {
+                const scrollPos = window.scrollY || document.documentElement.scrollTop;
+                document.getElementById('goToControlsBtn').classList.toggle('hidden', scrollPos < 100);
+                document.getElementById('backToTopBtn').classList.toggle('hidden', scrollPos > 100);
+            });
+            document.getElementById('inputData').valueAsDate = new Date();
+            document.getElementById('cargaModal').addEventListener('click', (e) => {
+                if(e.target.id === 'cargaModal') {
+                    hideCargaDetails();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

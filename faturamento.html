@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Controle de Faturamento - Fundição Erus</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+    <style>
+        :root {
+            --primary-blue: #2c3e50;
+            --secondary-blue: #3498db;
+            --accent-blue: #2980b9;
+            --dark-blue: #1a2530;
+            --light-gray: #ecf0f1;
+            --medium-gray: #bdc3c7;
+            --dark-gray: #7f8c8d;
+            --border-color: #95a5a6;
+            --success-color: #27ae60;
+            --warning-color: #e67e22;
+            --danger-color: #c0392b;
+        }
+        
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Courier New', monospace;
+        }
+        
+        body { 
+            background: var(--light-gray); 
+            color: #333; 
+            padding: 15px;
+            line-height: 1.4;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .container { 
+            max-width: 1500px; 
+            margin: 0 auto; 
+            background: #fff; 
+            border-radius: 4px; 
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header { 
+            background: var(--primary-blue); 
+            color: #fff; 
+            padding: 15px 20px; 
+            text-align: center;
+            border-bottom: 3px solid var(--secondary-blue);
+            flex-shrink: 0;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-content {
+            flex: 1;
+        }
+        
+        h1 { 
+            font-size: 18px; 
+            margin-bottom: 3px;
+            letter-spacing: 0.5px;
+        }
+        
+        p.subtitle { 
+            margin-top: 4px; 
+            color: var(--light-gray); 
+            font-size: 12px;
+        }
+        
+        .header-button {
+            padding: 6px 10px; 
+            border: 1px solid var(--dark-blue); 
+            border-radius: 3px; 
+            cursor: pointer; 
+            background: var(--secondary-blue); 
+            color: #fff; 
+            transition: background .15s;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .header-button:hover { 
+            background: var(--accent-blue); 
+        }
+        
+        /* Painel de totais acima dos gráficos */
+        .totals-panel {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: var(--light-gray);
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .total-card {
+            flex: 1;
+            min-width: 180px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .total-card .label {
+            font-size: 12px;
+            color: var(--dark-gray);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .total-card .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+        
+        .total-card.meta {
+            background-color: #e8f5e9;
+        }
+        
+        .total-card.meta .value {
+            color: var(--success-color);
+        }
+        
+        .total-card.remaining {
+            background-color: #fff3e0;
+        }
+        
+        .total-card.remaining .value {
+            color: var(--warning-color);
+        }
+        
+        /* Seção de gráficos */
+        .charts-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .chart-container {
+            flex: 1;
+            min-width: 320px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 30px;
+            height: 400px; /* <--- VALOR AUMENTADO */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .chart-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--primary-blue);
+            font-size: 14px;
+        }
+        
+        .chart-canvas-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .controls { 
+            padding: 10px 15px; 
+            display: flex; 
+            gap: 8px; 
+            align-items: center; 
+            justify-content: space-between; 
+            background: var(--light-gray);
+            flex-wrap: wrap;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        
+        .left-controls { 
+            display: flex; 
+            gap: 6px; 
+            align-items: center; 
+            flex-wrap: wrap;
+        }
+        
+        input[type="text"], input[type="date"], input[type="number"] { 
+            padding: 6px 8px; 
+            border: 1px solid var(--border-color); 
+            border-radius: 3px; 
+            font-size: 12px;
+            background: white;
+            font-family: 'Courier New', monospace;
+        }
+        
+        button { 
+            padding: 6px 10px; 
+            border: 1px solid var(--dark-blue); 
+            border-radius: 3px; 
+            cursor: pointer; 
+            background: var(--secondary-blue); 
+            color: #fff; 
+            transition: background .15s;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        button:hover { 
+            background: var(--accent-blue); 
+        }
+        
+        .btn-save { 
+            background: var(--success-color);
+            border-color: #1e8449;
+        }
+        
+        .btn-save:hover { 
+            background: #229954;
+        }
+        
+        .btn-add { 
+            background: var(--warning-color);
+            border-color: #bf6516;
+        }
+        
+        .btn-add:hover { 
+            background: #d35400;
+        }
+        
+        .btn-danger { 
+            background: var(--danger-color);
+            border-color: #922b21;
+        }
+        
+        .btn-danger:hover { 
+            background: #a93226;
+        }
+        
+        .btn-edit {
+            background: var(--warning-color);
+            border-color: #bf6516;
+        }
+        
+        .btn-edit:hover {
+            background: #d35400;
+        }
+        
+        .table-container { 
+            overflow: auto;
+            flex: 1;
+            min-height: 300px;
+        }
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            min-width: 100px;
+            font-size: 12px;
+            table-layout: fixed;
+        }
+        
+        th, td { 
+            padding: 8px 10px; 
+            border-bottom: 1px solid var(--border-color); 
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* LARGURAS FIXAS PARA AS COLUNAS */
+        th:nth-child(1), td:nth-child(1) { width: 100px; }  /* DATA */
+        th:nth-child(2), td:nth-child(2) { width: 100px; } /* CÓDIGO */
+        th:nth-child(3), td:nth-child(3) { width: 300px; } /* DESCRIÇÃO */
+        th:nth-child(4), td:nth-child(4) { width: 100px; } /* PESO UNITÁRIO */
+        th:nth-child(5), td:nth-child(5) { width: 100px; } /* QUANTIDADE */
+        th:nth-child(6), td:nth-child(6) { width: 100px; } /* PESO TOTAL */
+        
+        thead tr.header-row th { 
+            background: var(--dark-blue); 
+            color: white;
+            position: sticky; 
+            top: 0; 
+            z-index: 20; 
+            font-weight: 600;
+            font-size: 12px;
+            padding: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        thead tr.filter-row th { 
+            background: var(--medium-gray);
+            padding: 6px;
+            position: sticky;
+            top: 37px;
+            z-index: 15;
+        }
+        
+        thead tr.filter-row input { 
+            width: 100%; 
+            padding: 4px 6px; 
+            box-sizing: border-box; 
+            border-radius: 2px; 
+            border: 1px solid var(--border-color);
+            font-size: 11px;
+        }
+        
+        tr:nth-child(even) td { 
+            background: #f8f9f9; 
+        }
+        
+        tr:hover td { 
+            background: #eaf2f8; 
+        }
+        
+        td.editable { 
+            min-width: 70px;
+            border-right: 1px dotted var(--medium-gray);
+        }
+        
+        td.editable:focus { 
+            outline: 2px solid var(--secondary-blue); 
+            background: #fff; 
+        }
+        
+        .footer { 
+            padding: 10px 15px; 
+            background: var(--primary-blue); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            gap: 8px; 
+            flex-wrap: wrap;
+            border-top: 3px solid var(--secondary-blue);
+            color: white;
+            flex-shrink: 0;
+        }
+        
+        .status { 
+            font-size: 12px; 
+            color: #fff; 
+            font-weight: bold;
+        }
+        
+        .panel-totals { 
+            display: flex; 
+            gap: 10px; 
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .panel-card { 
+            background: rgba(255, 255, 255, 0.15); 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            padding: 6px 10px; 
+            border-radius: 3px; 
+            min-width: 140px; 
+            text-align: center;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+            color: white;
+        }
+        
+        .panel-card .label { 
+            font-size: 11px; 
+            color: var(--light-gray); 
+            font-weight: bold;
+        }
+        
+        .panel-card .value { 
+            font-size: 14px; 
+            font-weight: 700; 
+            margin-top: 4px;
+            color: #fff;
+        }
+        
+        /* Botões de navegação */
+        .nav-buttons {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .nav-button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--secondary-blue);
+            color: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-button:hover {
+            background-color: var(--accent-blue);
+            transform: translateY(-3px);
+        }
+        
+        .nav-button.hidden {
+            display: none;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 10px;
+                font-size: 13px;
+            }
+            
+            .container { 
+                border-radius: 3px;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .totals-panel {
+                padding: 10px;
+                flex-direction: column;
+            }
+            
+            .total-card {
+                min-width: 100%;
+            }
+            
+            .charts-section {
+                padding: 10px;
+                flex-direction: column;
+            }
+            
+            .chart-container {
+                min-width: 100%;
+            }
+            
+            .controls {
+                padding: 8px 10px;
+            }
+            
+            thead tr.filter-row th {
+                top: 39px;
+            }
+            
+            .footer {
+                padding: 8px 10px;
+            }
+            
+            .panel-card {
+                min-width: 120px;
+                padding: 5px 8px;
+            }
+            
+            .panel-card .value {
+                font-size: 13px;
+            }
+            
+            .nav-buttons {
+                right: 15px;
+                bottom: 15px;
+            }
+            
+            .nav-button {
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
+            
+            /* Ajuste de larguras para telas menores */
+            th:nth-child(1), td:nth-child(1) { width: 80px; }
+            th:nth-child(2), td:nth-child(2) { width: 80px; }
+            th:nth-child(3), td:nth-child(3) { width: 200px; }
+            th:nth-child(4), td:nth-child(4) { width: 80px; }
+            th:nth-child(5), td:nth-child(5) { width: 80px; }
+            th:nth-child(6), td:nth-child(6) { width: 80px; }
+        }
+        
+        @media (max-width: 600px) {
+            body {
+                padding: 5px;
+            }
+            
+            .charts-section {
+                padding: 8px;
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
+            
+            thead tr.filter-row th {
+                top: 54px;
+            }
+            
+            .left-controls, .controls {
+                gap: 4px;
+            }
+            
+            button {
+                padding: 5px 8px;
+                font-size: 11px;
+            }
+            
+            input[type="text"] {
+                max-width: 120px;
+            }
+            
+            .panel-totals {
+                gap: 5px;
+            }
+            
+            .panel-card {
+                min-width: 100px;
+                padding: 4px 6px;
+            }
+            
+            .panel-card .label {
+                font-size: 10px;
+            }
+            
+            .panel-card .value {
+                font-size: 12px;
+            }
+            
+            .nav-buttons {
+                right: 10px;
+                bottom: 10px;
+            }
+            
+            .nav-button {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+            
+            /* Ajuste de larguras para telas muito pequenas */
+            th:nth-child(1), td:nth-child(1) { width: 70px; }
+            th:nth-child(2), td:nth-child(2) { width: 70px; }
+            th:nth-child(3), td:nth-child(3) { width: 150px; }
+            th:nth-child(4), td:nth-child(4) { width: 70px; }
+            th:nth-child(5), td:nth-child(5) { width: 70px; }
+            th:nth-child(6), td:nth-child(6) { width: 70px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>CONTROLE DE FATURAMENTO - FUNDIÇÃO ERUS</h1>
+                <p class="subtitle">Registro de faturamento diário</p>
+            </div>
+            <button class="header-button" onclick="redirectToLink()">Sistema</button>
+        </header>
+
+        <div class="totals-panel">
+            <div class="total-card">
+                <div class="label">Total Faturado (kg)</div>
+                <div id="totalFaturadoCard" class="value">0.00</div>
+            </div>
+            <div class="total-card">
+                <div class="label">Média Diária (kg)</div>
+                <div id="mediaDiariaCard" class="value">0.00</div>
+            </div>
+            <div class="total-card">
+                <div class="label">Total Pendente (kg)</div>
+                <div id="totalPendenteCard" class="value">0.00</div>
+            </div>
+            <div class="total-card meta">
+                <div class="label">Meta Mensal (kg)</div>
+                <div id="metaMensalCard" class="value">160,000.00</div>
+            </div>
+            <div class="total-card">
+                <div class="label">Dias Úteis Restantes</div>
+                <div id="diasUteisRestantesCard" class="value">0</div>
+            </div>
+            <div class="total-card remaining">
+                <div class="label">Meta Diária Necessária (kg)</div>
+                <div id="metaDiariaNecessariaCard" class="value">0.00</div>
+            </div>
+        </div>
+
+        <div class="charts-section">
+            <div class="chart-container">
+                <div class="chart-title">PESO TOTAL FATURADO POR DIA (kg)</div>
+                <div class="chart-canvas-container">
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-container" style="padding: 15px; background: #f9f9f9; border-bottom: 1px solid var(--border-color);">
+            <div class="form-row" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: center;">
+                <div class="form-group" style="flex: 1; min-width: 150px;">
+                    <label for="inputData" style="display: block; font-size: 12px; margin-bottom: 4px; font-weight: bold; color: var(--dark-blue);">DATA</label>
+                    <input type="date" id="inputData" value="" style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; background: white; font-family: 'Courier New', monospace;">
+                </div>
+                <div class="form-group" style="flex: 1; min-width: 150px;">
+                    <label for="inputCodigo" style="display: block; font-size: 12px; margin-bottom: 4px; font-weight: bold; color: var(--dark-blue);">CÓDIGO</label>
+                    <input type="text" id="inputCodigo" placeholder="Código do produto" style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; background: white; font-family: 'Courier New', monospace; text-transform: uppercase;">
+                </div>
+                <div class="form-group" style="flex: 2; min-width: 200px;">
+                    <label for="inputDescricao" style="display: block; font-size: 12px; margin-bottom: 4px; font-weight: bold; color: var(--dark-blue);">DESCRIÇÃO</label>
+                    <input type="text" id="inputDescricao" placeholder="Descrição do produto" style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; background: white; font-family: 'Courier New', monospace; text-transform: uppercase;">
+                </div>
+            </div>
+            
+            <div class="form-row" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: center;">
+                <div class="form-group" style="flex: 1; min-width: 150px;">
+                    <label for="inputPesoUn" style="display: block; font-size: 12px; margin-bottom: 4px; font-weight: bold; color: var(--dark-blue);">PESO UNITÁRIO (kg)</label>
+                    <input type="number" id="inputPesoUn" placeholder="0.00" min="0" step="0.01" style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; background: white; font-family: 'Courier New', monospace;">
+                </div>
+                <div class="form-group" style="flex: 1; min-width: 150px;">
+                    <label for="inputQuantidade" style="display: block; font-size: 12px; margin-bottom: 4px; font-weight: bold; color: var(--dark-blue);">QUANTIDADE</label>
+                    <input type="number" id="inputQuantidade" placeholder="0" min="1" step="1" style="width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; background: white; font-family: 'Courier New', monospace;">
+                </div>
+                <div class="form-group" style="flex: 1; min-width: 150px; display: flex; align-items: flex-end;">
+                    <button class="btn-add" onclick="adicionarFaturamento()" style="margin-top: 22px;">Adicionar Faturamento</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls" id="controlsPanel">
+            <div class="left-controls">
+                <button class="btn-danger" id="clearBtn" title="Apagar TODOS os registros" onclick="confirmAndClear()">Apagar Tudo</button>
+                <button onclick="exportData()" title="Exportar dados">Exportar</button>
+            </div>
+
+            <div style="display:flex; gap:6px; align-items:center;">
+                <button class="btn-edit" id="editBtn" onclick="toggleEditMode()">Editar</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="faturamentoTable" role="table" aria-label="Tabela de faturamento">
+                <thead>
+                    <tr class="header-row">
+                        <th>DATA</th>
+                        <th>CÓDIGO</th>
+                        <th>DESCRIÇÃO</th>
+                        <th>PESO UNITÁRIO</th>
+                        <th>QUANTIDADE</th>
+                        <th>PESO TOTAL</th>
+                        <th style="width: 80px;">AÇÕES</th>
+                    </tr>
+                    <tr class="filter-row">
+                        <th><input data-col="0" placeholder="Filtrar"/></th>
+                        <th><input data-col="1" placeholder="Filtrar"/></th>
+                        <th><input data-col="2" placeholder="Filtrar"/></th>
+                        <th><input data-col="3" placeholder="Filtrar"/></th>
+                        <th><input data-col="4" placeholder="Filtrar"/></th>
+                        <th><input data-col="5" placeholder="Filtrar"/></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <div class="status">Total de registros: <strong id="totalRegistros">0</strong></div>
+            <div class="panel-totals">
+                <div class="panel-card">
+                    <div class="label">Total Faturado (kg)</div>
+                    <div id="totalFaturado" class="value">0.00</div>
+                </div>
+                <div class="panel-card">
+                    <div class="label">Média Diária (kg)</div>
+                    <div id="mediaDiaria" class="value">0.00</div>
+                </div>
+                <div class="panel-card" style="background-color: rgba(39, 174, 96, 0.3);">
+                    <div class="label">Meta Mensal (kg)</div>
+                    <div id="metaMensal" class="value">160,000.00</div>
+                </div>
+                <div class="panel-card" style="background-color: rgba(230, 126, 34, 0.3);">
+                    <div class="label">Meta Diária Necessária (kg)</div>
+                    <div id="metaDiariaNecessaria" class="value">0.00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-buttons">
+        <button id="goToControlsBtn" class="nav-button hidden" title="Ir para controles">↓</button>
+        <button id="backToTopBtn" class="nav-button hidden" title="Voltar ao topo">↑</button>
+    </div>
+
+    <script>
+        // === CONFIGURAÇÕES IMPORTANTES DE COLUNAS ===
+        const COL_DATA = 0;
+        const COL_CODIGO = 1;
+        const COL_DESCRICAO = 2;
+        const COL_PESO_UN = 3;
+        const COL_QUANTIDADE = 4;
+        const COL_PESO_TOTAL = 5;
+        const COL_ACOES = 6;
+        
+        const META_MENSAL_KEY = 'meta_mensal_faturamento';
+        let isEditMode = false;
+        let dailyChart = null;
+        let metaMensal = 160000; // Meta padrão de 160.000 kg
+        let registros = []; // Armazenará os registros do servidor
+
+        // Registra o plugin de datalabels para ser usado pelo Chart.js
+        Chart.register(ChartDataLabels);
+
+        // --- Função para fazer requisições à API ---
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            if (data && (method === 'POST' || method === 'PUT')) {
+                options.body = JSON.stringify(data);
+            }
+            
+            try {
+                const response = await fetch(`/api/${endpoint}`, options);
+                if (!response.ok) {
+                    throw new Error(`Erro na requisição: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('Erro na comunicação com o servidor:', error);
+                alert('Erro na comunicação com o servidor. Verifique se o servidor está rodando.');
+                throw error;
+            }
+        }
+
+        // --- Função utilitária para formatar número com 2 decimais ---
+        function formatNumber(value){
+            if (value === null || value === undefined || isNaN(value)) return '0,00';
+            return Number(value).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+        }
+
+        // --- Parse seguro de número que aceita vários formatos ---
+        function parseNumberSafe(text){
+            if (text === null || text === undefined) return 0;
+            let s = String(text).trim();
+            if (s === '') return 0;
+            s = s.replace(/\s+/g, '');
+            const hasDot = s.indexOf('.') > -1;
+            const hasComma = s.indexOf(',') > -1;
+
+            if (hasDot && hasComma) {
+                s = s.replace(/\./g, '').replace(/,/g, '.');
+            } else if (!hasDot && hasComma) {
+                s = s.replace(/,/g, '.');
+            }
+            s = s.replace(/[^0-9.\-]/g, '');
+            const num = parseFloat(s);
+            return isNaN(num) ? 0 : num;
+        }
+
+        // --- Função para converter data em formato brasileiro para objeto Date ---
+        function parseDate(dateString) {
+            if (!dateString) return new Date(0);
+            
+            const formats = [
+                /(\d{2})\/(\d{2})\/(\d{4})/, // dd/mm/yyyy
+                /(\d{2})-(\d{2})-(\d{4})/,   // dd-mm-yyyy
+                /(\d{4})-(\d{2})-(\d{2})/,   // yyyy-mm-dd
+                /(\d{4})\/(\d{2})\/(\d{2})/  // yyyy/mm/dd
+            ];
+            
+            let day, month, year;
+            
+            for (const format of formats) {
+                const match = dateString.match(format);
+                if (match) {
+                    if (format === formats[0] || format === formats[1]) {
+                        day = parseInt(match[1], 10);
+                        month = parseInt(match[2], 10) - 1;
+                        year = parseInt(match[3], 10);
+                    } else {
+                        year = parseInt(match[1], 10);
+                        month = parseInt(match[2], 10) - 1;
+                        day = parseInt(match[3], 10);
+                    }
+                    
+                    if (year > 0 && month >= 0 && month <= 11 && day > 0 && day <= 31) {
+                        return new Date(year, month, day);
+                    }
+                }
+            }
+            
+            return new Date(0);
+        }
+
+        // --- Função para calcular dias úteis restantes no mês ---
+        function calcularDiasUteisRestantes() {
+            const hoje = new Date();
+            const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+            let diasUteis = 0;
+            
+            for (let dia = hoje.getDate(); dia <= ultimoDiaMes.getDate(); dia++) {
+                const dataTeste = new Date(hoje.getFullYear(), hoje.getMonth(), dia);
+                // 0 = Domingo, 6 = Sábado
+                if (dataTeste.getDay() !== 0 && dataTeste.getDay() !== 6) {
+                    diasUteis++;
+                }
+            }
+            
+            return diasUteis;
+        }
+
+        // --- Função para calcular metas ---
+        function calcularMetas(totalFaturado) {
+            const diasUteisRestantes = calcularDiasUteisRestantes();
+            const metaRestante = Math.max(0, metaMensal - totalFaturado);
+            const metaDiariaNecessaria = diasUteisRestantes > 0 ? metaRestante / diasUteisRestantes : 0;
+            
+            // Atualizar cards
+            document.getElementById('diasUteisRestantesCard').textContent = diasUteisRestantes;
+            document.getElementById('metaDiariaNecessariaCard').textContent = formatNumber(metaDiariaNecessaria);
+            // INÍCIO: ATUALIZAÇÃO DO NOVO PAINEL
+            document.getElementById('totalPendenteCard').textContent = formatNumber(metaRestante);
+            // FIM: ATUALIZAÇÃO DO NOVO PAINEL
+
+            // Atualizar footer
+            document.getElementById('metaDiariaNecessaria').textContent = formatNumber(metaDiariaNecessaria);
+        }
+
+        // --- Atualizar totais e métricas ---
+        function updateTotals(){
+            let totalFaturado = 0;
+            let totalRegistros = registros.length;
+            let diasComFaturamento = new Set();
+            
+            registros.forEach(registro => {
+                const pesoTotal = registro.peso_total || (registro.peso * registro.quant);
+                
+                if (pesoTotal) {
+                    totalFaturado += pesoTotal;
+                    
+                    // Contabiliza dias com faturamento
+                    if (registro.data) {
+                        const data = parseDate(registro.data);
+                        if (data.getTime() !== 0) {
+                            diasComFaturamento.add(data.toDateString());
+                        }
+                    }
+                }
+            });
+            
+            // Calcular média diária
+            const numDias = diasComFaturamento.size;
+            const mediaDiaria = numDias > 0 ? totalFaturado / numDias : 0;
+            
+            // Atualizar cards
+            document.getElementById('totalFaturadoCard').textContent = formatNumber(totalFaturado);
+            document.getElementById('mediaDiariaCard').textContent = formatNumber(mediaDiaria);
+            
+            // Atualizar footer
+            document.getElementById('totalRegistros').textContent = totalRegistros;
+            document.getElementById('totalFaturado').textContent = formatNumber(totalFaturado);
+            document.getElementById('mediaDiaria').textContent = formatNumber(mediaDiaria);
+            document.getElementById('metaMensal').textContent = formatNumber(metaMensal);
+            
+            // Calcular e atualizar metas
+            calcularMetas(totalFaturado);
+            
+            // Atualizar gráfico
+            updateDailyChart();
+        }
+
+        // --- Função para criar/atualizar o gráfico diário ---
+        function updateDailyChart() {
+            const dailyData = {};
+            
+            // Processa cada registro
+            registros.forEach(registro => {
+                const dataText = registro.data;
+                const pesoTotal = registro.peso_total || (registro.peso * registro.quant);
+                
+                if (dataText && pesoTotal) {
+                    const data = parseDate(dataText);
+                    
+                    if (data.getFullYear() > 2000) { // Filtra datas válidas
+                        const dataFormatada = data.toLocaleDateString('pt-BR');
+                        
+                        if (!dailyData[dataFormatada]) {
+                            dailyData[dataFormatada] = 0;
+                        }
+                        
+                        dailyData[dataFormatada] += pesoTotal;
+                    }
+                }
+            });
+            
+            // Ordena por data (crescente)
+            const dailyArray = Object.entries(dailyData)
+                .sort((a, b) => {
+                    const dateA = parseDate(a[0]);
+                    const dateB = parseDate(b[0]);
+                    return dateA - dateB;
+                });
+            
+            const labels = dailyArray.map(item => item[0]);
+            const data = dailyArray.map(item => item[1]);
+
+            // Encontra o valor máximo nos dados para ajustar a escala
+            const maxValue = data.length > 0 ? Math.max(...data) : 0;
+            // Define o topo da escala com uma margem de 20% acima do valor máximo
+            const suggestedMax = maxValue * 1.2;
+            
+            // Destrói o gráfico anterior se existir
+            if (dailyChart) {
+                dailyChart.destroy();
+            }
+            
+            // Cria o novo gráfico
+            const ctx = document.getElementById('dailyChart').getContext('2d');
+            dailyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Peso Faturado (kg)', 
+                        data: data,
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            // Adiciona uma margem no topo do eixo Y
+                            suggestedMax: suggestedMax, 
+                            title: {
+                                display: true,
+                                text: 'Peso (kg)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Data'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Peso: ${formatNumber(context.raw)} kg`;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            display: true,
+                            align: 'end',
+                            anchor: 'end',
+                            offset: -5, // Puxa o rótulo um pouco para baixo, para longe da borda
+                            formatter: function(value, context) {
+                                return formatNumber(value);
+                            },
+                            color: '#333',
+                            font: {
+                                weight: 'bold',
+                                size: 10
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Filtros por coluna ---
+        function applyColumnFilters(){
+            const inputs = document.querySelectorAll('thead .filter-row input');
+            const filters = Array.from(inputs).map(i => i.value.trim().toUpperCase());
+            const rows = document.querySelectorAll('#faturamentoTable tbody tr');
+            
+            rows.forEach(row => {
+                const cells = row.getElementsByTagName('td');
+                let visible = true;
+                
+                for (let i = 0; i < filters.length; i++){
+                    if (!filters[i]) continue;
+                    const cellText = (cells[i] && cells[i].textContent) ? cells[i].textContent.toUpperCase() : '';
+                    if (cellText.indexOf(filters[i]) === -1){
+                        visible = false;
+                        break;
+                    }
+                }
+                
+                row.style.display = visible ? '' : 'none';
+            });
+        }
+
+        // --- Adicionar novo faturamento a partir do formulário ---
+        async function adicionarFaturamento() {
+            const data = document.getElementById('inputData').value;
+            const codigo = document.getElementById('inputCodigo').value.toUpperCase();
+            const descricao = document.getElementById('inputDescricao').value.toUpperCase();
+            const pesoUn = document.getElementById('inputPesoUn').value;
+            const quantidade = document.getElementById('inputQuantidade').value;
+
+            // Validação básica
+            if (!data || !codigo || !pesoUn || !quantidade) {
+                alert('Por favor, preencha os campos obrigatórios: Data, Código, Peso Unitário e Quantidade.');
+                return;
+            }
+
+            try {
+                // Criar objeto de registro para enviar ao servidor
+                const registro = {
+                    data: data,
+                    codigo: codigo,
+                    descricao: descricao,
+                    peso: parseNumberSafe(pesoUn),
+                    quant: parseInt(quantidade),
+                    material: "FATURAMENTO", // Campo obrigatório no banco
+                    cliente: "CLIENTE", // Campo obrigatório no banco
+                    situacao: "finalizada", // Para faturamento, consideramos como finalizada
+                    tipo: "faturamento" // Tipo especial para identificar registros de faturamento
+                };
+
+                // Enviar para o servidor
+                const response = await apiRequest('registros', 'POST', registro);
+                
+                if (response.success) {
+                    // Adicionar o ID retornado ao registro
+                    registro.id = response.id;
+                    registro.peso_total = registro.peso * registro.quant;
+                    
+                    // Adicionar à lista local
+                    registros.push(registro);
+                    
+                    // Adicionar linha na tabela
+                    addRowToTable(registro);
+                    
+                    // Limpar formulário após adicionar
+                    limparFormulario();
+                    
+                    alert('Faturamento adicionado com sucesso!');
+                } else {
+                    alert('Erro ao adicionar faturamento: ' + (response.error || 'Erro desconhecido'));
+                }
+            } catch (error) {
+                console.error('Erro ao adicionar faturamento:', error);
+                alert('Erro ao adicionar faturamento. Verifique o console para mais detalhes.');
+            }
+        }
+
+        // --- Adicionar nova linha na tabela ---
+        function addRowToTable(registro){
+            const tbody = document.querySelector('#faturamentoTable tbody');
+            const tr = document.createElement('tr');
+            tr.dataset.id = registro.id;
+            
+            // Formatar data para exibição (dd/mm/aaaa)
+            const dataObj = new Date(registro.data);
+            const dataFormatada = dataObj.toLocaleDateString('pt-BR');
+            
+            // Calcular peso total
+            const pesoTotal = registro.peso_total || (registro.peso * registro.quant);
+            
+            // Criar células
+            const celulas = [
+                dataFormatada,
+                registro.codigo,
+                registro.descricao,
+                formatNumber(registro.peso),
+                registro.quant.toString(),
+                formatNumber(pesoTotal)
+            ];
+            
+            for (let i = 0; i < celulas.length; i++){
+                const td = document.createElement('td');
+                td.className = 'editable';
+                td.contentEditable = isEditMode;
+                td.textContent = celulas[i];
+                
+                // Adicionar evento para salvar alterações
+                if (isEditMode) {
+                    td.addEventListener('blur', () => salvarAlteracoes(registro.id, i, td.textContent));
+                }
+                
+                tr.appendChild(td);
+            }
+            
+            // Adicionar célula de ações
+            const tdAcoes = document.createElement('td');
+            const btnExcluir = document.createElement('button');
+            btnExcluir.textContent = 'Excluir';
+            btnExcluir.className = 'btn-danger';
+            btnExcluir.style.fontSize = '11px';
+            btnExcluir.onclick = () => excluirRegistro(registro.id, tr);
+            tdAcoes.appendChild(btnExcluir);
+            tr.appendChild(tdAcoes);
+            
+            tbody.appendChild(tr);
+            updateTotals();
+            applyColumnFilters();
+        }
+
+        // --- Salvar alterações feitas em uma célula ---
+        async function salvarAlteracoes(id, colIndex, novoValor) {
+            try {
+                const registro = registros.find(r => r.id === id);
+                if (!registro) return;
+                
+                let updates = {};
+                
+                switch (colIndex) {
+                    case COL_DATA:
+                        updates.data = novoValor;
+                        break;
+                    case COL_CODIGO:
+                        updates.codigo = novoValor;
+                        break;
+                    case COL_DESCRICAO:
+                        updates.descricao = novoValor;
+                        break;
+                    case COL_PESO_UN:
+                        updates.peso = parseNumberSafe(novoValor);
+                        break;
+                    case COL_QUANTIDADE:
+                        updates.quant = parseInt(novoValor);
+                        break;
+                }
+                
+                if (Object.keys(updates).length > 0) {
+                    const response = await apiRequest('update', 'POST', {
+                        id: id,
+                        updates: updates
+                    });
+                    
+                    if (response.success) {
+                        // Atualizar o registro local
+                        Object.assign(registro, updates);
+                        
+                        // Recalcular peso total se peso ou quantidade foram alterados
+                        if (colIndex === COL_PESO_UN || colIndex === COL_QUANTIDADE) {
+                            registro.peso_total = registro.peso * registro.quant;
+                            const tr = document.querySelector(`tr[data-id="${id}"]`);
+                            if (tr) {
+                                const cells = tr.getElementsByTagName('td');
+                                cells[COL_PESO_TOTAL].textContent = formatNumber(registro.peso_total);
+                            }
+                        }
+                        
+                        updateTotals();
+                    } else {
+                        alert('Erro ao salvar alterações: ' + (response.error || 'Erro desconhecido'));
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao salvar alterações:', error);
+                alert('Erro ao salvar alterações. Verifique o console para mais detalhes.');
+            }
+        }
+
+        // --- Excluir registro ---
+        async function excluirRegistro(id, trElement) {
+            if (!confirm('Tem certeza que deseja excluir este registro?')) return;
+            
+            try {
+                const response = await apiRequest('delete', 'POST', { id: id });
+                
+                if (response.success) {
+                    // Remover da lista local
+                    registros = registros.filter(r => r.id !== id);
+                    
+                    // Remover da tabela
+                    trElement.remove();
+                    
+                    updateTotals();
+                    alert('Registro excluído com sucesso!');
+                } else {
+                    alert('Erro ao excluir registro: ' + (response.error || 'Erro desconhecido'));
+                }
+            } catch (error) {
+                console.error('Erro ao excluir registro:', error);
+                alert('Erro ao excluir registro. Verifique o console para mais detalhes.');
+            }
+        }
+
+        // --- Limpar o formulário ---
+        function limparFormulario() {
+            document.getElementById('inputCodigo').value = '';
+            document.getElementById('inputDescricao').value = '';
+            document.getElementById('inputPesoUn').value = '';
+            document.getElementById('inputQuantidade').value = '';
+            
+            // Definir data atual como padrão
+            const hoje = new Date();
+            const ano = hoje.getFullYear();
+            let mes = hoje.getMonth() + 1;
+            let dia = hoje.getDate();
+            
+            if (mes < 10) mes = '0' + mes;
+            if (dia < 10) dia = '0' + dia;
+            
+            document.getElementById('inputData').value = `${ano}-${mes}-${dia}`;
+        }
+
+        // --- Apagar toda a tabela com confirmação de senha ---
+        async function confirmAndClear(){
+            const pass = prompt('Digite a senha para apagar TODOS os registros de faturamento:');
+            if (pass === null) return;
+            if (pass.trim() === 'CONFIRMAR') {
+                if (!confirm('Confirmar apagamento de TODOS os registros de faturamento? Esta ação não pode ser desfeita.')) return;
+                
+                try {
+                    // Buscar todos os registros de faturamento
+                    const registrosFaturamento = registros.filter(r => r.tipo === 'faturamento');
+                    
+                    // Excluir um por um
+                    for (const registro of registrosFaturamento) {
+                        await apiRequest('delete', 'POST', { id: registro.id });
+                    }
+                    
+                    // Atualizar a interface
+                    registros = registros.filter(r => r.tipo !== 'faturamento');
+                    const tbody = document.querySelector('#faturamentoTable tbody');
+                    tbody.innerHTML = '';
+                    updateTotals();
+                    
+                    alert('Todos os registros de faturamento foram apagados.');
+                } catch (error) {
+                    console.error('Erro ao apagar registros:', error);
+                    alert('Erro ao apagar registros. Verifique o console para mais detalhes.');
+                }
+            } else {
+                alert('Senha incorreta. Ação cancelada.');
+            }
+        }
+
+        // --- Alternar modo de edição ---
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            const editBtn = document.getElementById('editBtn');
+            
+            if (isEditMode) {
+                editBtn.textContent = 'Sair da Edição';
+                editBtn.classList.add('btn-save');
+                editBtn.classList.remove('btn-edit');
+            } else {
+                editBtn.textContent = 'Editar';
+                editBtn.classList.remove('btn-save');
+                editBtn.classList.add('btn-edit');
+            }
+            
+            const cells = document.querySelectorAll('#faturamentoTable tbody td:not(:last-child)');
+            cells.forEach(cell => {
+                cell.contentEditable = isEditMode;
+                
+                // Adicionar ou remover eventos de blur
+                if (isEditMode) {
+                    cell.addEventListener('blur', function() {
+                        const id = parseInt(this.parentElement.dataset.id);
+                        const colIndex = Array.from(this.parentElement.children).indexOf(this);
+                        salvarAlteracoes(id, colIndex, this.textContent);
+                    });
+                } else {
+                    // Remover event listeners (não é trivial, então vamos recarregar a tabela)
+                    carregarDados();
+                }
+            });
+        }
+
+        // --- Redirecionar para o link ---
+        function redirectToLink() {
+            window.location.href = 'dashboard.html';
+        }
+
+        // --- Exportar dados para CSV ---
+        function exportData(){
+            const lines = [];
+            
+            // Cabeçalho
+            lines.push(['DATA', 'CÓDIGO', 'DESCRIÇÃO', 'PESO UNITÁRIO', 'QUANTIDADE', 'PESO TOTAL'].join(';'));
+            
+            // Dados
+            registros.forEach(registro => {
+                if (registro.tipo === 'faturamento') {
+                    const dataFormatada = new Date(registro.data).toLocaleDateString('pt-BR');
+                    const line = [
+                        dataFormatada,
+                        registro.codigo,
+                        registro.descricao,
+                        formatNumber(registro.peso),
+                        registro.quant,
+                        formatNumber(registro.peso * registro.quant)
+                    ].join(';');
+                    lines.push(line);
+                }
+            });
+            
+            const blob = new Blob([lines.join('\n')], {type: 'text/csv;charset=utf-8;'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'faturamento.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // --- Carregar dados do servidor ---
+        async function carregarDados() {
+            try {
+                const data = await apiRequest('registros');
+                registros = data.filter(registro => registro.tipo === 'faturamento');
+                
+                const tbody = document.querySelector('#faturamentoTable tbody');
+                tbody.innerHTML = '';
+                
+                registros.forEach(registro => {
+                    addRowToTable(registro);
+                });
+                
+                updateTotals();
+                applyColumnFilters();
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+            }
+        }
+
+        // --- Funções para navegação ---
+        function scrollToControls() {
+            const controlsPanel = document.getElementById('controlsPanel');
+            controlsPanel.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- Verificar posição de rolagem para mostrar/ocultar botões de navegação ---
+        function checkScrollPosition() {
+            const goToControlsBtn = document.getElementById('goToControlsBtn');
+            const backToTopBtn = document.getElementById('backToTopBtn');
+            const scrollPosition = window.scrollY || document.documentElement.scrollTop;
+            
+            if (scrollPosition < 100) {
+                goToControlsBtn.classList.remove('hidden');
+                backToTopBtn.classList.add('hidden');
+            } else {
+                goToControlsBtn.classList.add('hidden');
+                backToTopBtn.classList.remove('hidden');
+            }
+        }
+
+        // --- Configurar data atual no formulário ao carregar a página ---
+        function definirDataAtual() {
+            const hoje = new Date();
+            const ano = hoje.getFullYear();
+            let mes = hoje.getMonth() + 1;
+            let dia = hoje.getDate();
+            
+            if (mes < 10) mes = '0' + mes;
+            if (dia < 10) dia = '0' + dia;
+            
+            document.getElementById('inputData').value = `${ano}-${mes}-${dia}`;
+        }
+
+        // --- Inicialização da página ---
+        document.addEventListener('DOMContentLoaded', function(){
+            definirDataAtual();
+            carregarDados();
+            
+            // Carregar meta mensal do localStorage
+            const savedMeta = localStorage.getItem(META_MENSAL_KEY);
+            if (savedMeta) {
+                metaMensal = parseNumberSafe(savedMeta);
+                document.getElementById('metaMensalCard').textContent = formatNumber(metaMensal);
+            }
+            
+            // Adicionar evento de input para os filtros
+            document.querySelectorAll('thead .filter-row input').forEach(input => {
+                input.addEventListener('input', applyColumnFilters);
+            });
+            
+            // Configurar botões de navegação
+            document.getElementById('goToControlsBtn').addEventListener('click', scrollToControls);
+            document.getElementById('backToTopBtn').addEventListener('click', scrollToTop);
+            
+            // Verificar posição de rolagem ao carregar e ao rolar
+            window.addEventListener('scroll', checkScrollPosition);
+            checkScrollPosition();
+        });
+    </script>
+</body>
+</html>

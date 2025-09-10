@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Lista de Ramais - Fundição Erus</title>
+
+    <style>
+        :root {
+            --primary-blue: #2c3e50;
+            --secondary-blue: #3498db;
+            --accent-blue: #2980b9;
+            --dark-blue: #1a2530;
+            --light-gray: #ecf0f1;
+            --medium-gray: #bdc3c7;
+            --danger-color: #c0392b;
+            --border-color: #95a5a6;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; }
+        body { 
+            background: var(--light-gray); 
+            color: #333; 
+            line-height: 1.4; 
+            font-size: 14px; 
+            /* Adiciona um padding para criar a margem visual */
+            padding: 10px; /* Margem de 10px em todos os lados */
+            height: 100vh; /* Garante que o body ocupa a altura total da viewport */
+            display: flex; /* Permite que o container se ajuste */
+            flex-direction: column;
+        }
+        .container { 
+            width: 100%; 
+            height: 100%; /* Agora o container ocupa 100% da altura DISPONÍVEL no body com padding */
+            background: #fff; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column;
+            border-radius: 5px; /* Adiciona um leve arredondamento nas bordas do container */
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); /* Sombra suave para destacar o container */
+        }
+        header { 
+            background: var(--primary-blue); 
+            color: #fff; 
+            padding: 15px 20px; 
+            text-align: center; 
+            border-bottom: 3px solid var(--secondary-blue); 
+            position: relative; 
+            flex-shrink: 0;
+        }
+        h1 { font-size: 18px; letter-spacing: 0.5px; }
+        .header-button { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); }
+        
+        .form-container { padding: 15px; background: #f9f9f9; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: flex-end; }
+        .form-group { flex: 1; min-width: 150px; }
+        .form-group label { display: block; font-size: 12px; margin-bottom: 4px; font-weight: bold; color: var(--dark-blue); }
+        .form-group input { width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; background: white; font-family: 'Courier New', monospace; text-transform: uppercase; }
+        .form-buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 5px; }
+        
+        .controls { padding: 10px 15px; display: flex; gap: 8px; align-items: center; justify-content: space-between; background: var(--light-gray); flex-wrap: wrap; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+        .filter-group { flex-grow: 1; }
+        .filter-group input { width: 100%; max-width: 300px; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; font-family: 'Courier New', monospace; text-transform: uppercase; }
+
+        button { padding: 6px 10px; border: 1px solid var(--dark-blue); border-radius: 3px; cursor: pointer; background: var(--secondary-blue); color: #fff; transition: background .15s; font-size: 12px; font-weight: bold; }
+        button:hover { background: var(--accent-blue); }
+        .btn-add { background: #27ae60; border-color: #1e8449; }
+        .btn-add:hover { background: #229954; }
+        .btn-danger { background: var(--danger-color); border-color: #922b21; }
+        .btn-danger:hover { background: #a93226; }
+        
+        .table-container { overflow: auto; flex: 1; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { padding: 8px 10px; border-bottom: 1px solid var(--border-color); text-align: left; text-transform: uppercase; }
+        thead tr th { background: var(--dark-blue); color: white; position: sticky; top: 0; z-index: 20; font-weight: 600; font-size: 12px; padding: 10px; }
+        tr:nth-child(even) td { background: #f8f9f9; }
+        tr:hover td { background: #eaf2f8; }
+        .delete-cell { width: 30px; text-align: center; }
+        .delete-btn { color: var(--danger-color); cursor: pointer; font-weight: bold; }
+        .delete-btn:hover { color: #ff0000; }
+        .footer { padding: 10px 15px; background: var(--primary-blue); display: flex; justify-content: space-between; align-items: center; color: white; flex-shrink: 0; border-top: 3px solid var(--secondary-blue); }
+        .status { font-size: 12px; color: #fff; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>LISTA DE RAMAIS - FUNDIÇÃO ERUS</h1>
+        <div class="header-button">
+            <button onclick="window.location.href='/dashboard'">Sistema</button>
+        </div>
+    </header>
+
+    <div class="form-container">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="inputNome">NOME / SETOR</label>
+                <input type="text" id="inputNome" placeholder="Ex: Engenharia, João Silva">
+            </div>
+            <div class="form-group">
+                <label for="inputRamal">RAMAL</label>
+                <input type="number" id="inputRamal" placeholder="Ex: 201">
+            </div>
+        </div>
+        <div class="form-buttons">
+            <button class="btn-add" onclick="adicionarRamal()">Adicionar Ramal</button>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="filter-group">
+             <input type="text" id="filtroTabela" onkeyup="filtrarTabela()" placeholder="Filtrar por nome ou ramal...">
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="ramaisTable">
+            <thead>
+                <tr>
+                    <th class="delete-cell"></th>
+                    <th>NOME / SETOR</th>
+                    <th>RAMAL</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <div class="status">Total de Ramais: <strong id="totalRamais">0</strong></div>
+    </div>
+</div>
+
+<script>
+    let registros = [];
+
+    function renderizarTabela() {
+        const tbody = document.querySelector('#ramaisTable tbody');
+        tbody.innerHTML = '';
+        
+        const registrosOrdenados = registros.sort((a, b) => a.nome.localeCompare(b.nome));
+
+        registrosOrdenados.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.dataset.id = item.id;
+            
+            tr.innerHTML = `
+                <td class="delete-cell">
+                    <span class="delete-btn" onclick="excluirRamal(${item.id})" title="Excluir Ramal">X</span>
+                </td>
+                <td>${item.nome}</td>
+                <td>${item.ramal}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('totalRamais').textContent = registros.length;
+        filtrarTabela();
+    }
+
+    async function adicionarRamal() {
+        const inputNome = document.getElementById('inputNome');
+        const inputRamal = document.getElementById('inputRamal');
+        const nome = inputNome.value.trim().toUpperCase();
+        const ramal = inputRamal.value.trim();
+
+        if (!nome || !ramal) {
+            alert('Por favor, preencha os campos Nome/Setor e Ramal.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/ramais', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, ramal })
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro na resposta do servidor.');
+            }
+
+            inputNome.value = '';
+            inputRamal.value = '';
+            inputNome.focus();
+            
+            carregarDados();
+        } catch (error) {
+            console.error('Falha ao adicionar ramal:', error);
+            alert('Não foi possível adicionar o ramal. Verifique o console para mais detalhes.');
+        }
+    }
+
+    async function excluirRamal(id) {
+        if (confirm('Tem certeza que deseja excluir este ramal?')) {
+            try {
+                const response = await fetch('/api/ramais-delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro na resposta do servidor.');
+                }
+                
+                carregarDados();
+            } catch (error) {
+                console.error('Falha ao excluir ramal:', error);
+                alert('Não foi possível excluir o ramal. Verifique o console para mais detalhes.');
+            }
+        }
+    }
+
+    function filtrarTabela() {
+        const filtro = document.getElementById('filtroTabela').value.toUpperCase();
+        const linhas = document.querySelectorAll('#ramaisTable tbody tr');
+
+        linhas.forEach(linha => {
+            const textoLinha = linha.textContent || linha.innerText;
+            if (textoLinha.toUpperCase().includes(filtro)) {
+                linha.style.display = '';
+            } else {
+                linha.style.display = 'none';
+            }
+        });
+    }
+
+    async function carregarDados() {
+        try {
+            const response = await fetch('/api/ramais');
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+            registros = await response.json();
+            renderizarTabela();
+        } catch (error) {
+            console.error('Falha ao carregar ramais:', error);
+            alert('Não foi possível carregar a lista de ramais do servidor.');
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        carregarDados();
+        
+        document.getElementById('inputNome').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') document.getElementById('inputRamal').focus();
+        });
+        document.getElementById('inputRamal').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') adicionarRamal();
+        });
+    });
+</script>
+</body>
+</html>

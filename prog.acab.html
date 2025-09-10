@@ -1,0 +1,2366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema - Programação de Acabamento</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Estilos Gerais */
+    * {
+      box-sizing: border-box;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: "Courier New", monospace;
+      background-color: #f0f2f5; /* Light gray background */
+      user-select: none;
+    }
+
+    #container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden; /* Prevent body scroll */
+    }
+
+    /* Header e Navegação Principal */
+    header {
+      background: linear-gradient(90deg, #003366, #001a33); /* Dark blue gradient */
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      z-index: 1000;
+      user-select: none;
+    }
+    
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    header nav {
+      display: flex;
+      gap: 20px;
+    }
+
+    header nav a, header nav button {
+      background: none;
+      border: none;
+      color: white;
+      text-decoration: none;
+      font-family: "Segoe UI", sans-serif;
+      font-size: 16px;
+      padding: 8px 12px;
+      border-radius: 5px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    header nav a:hover, header nav button:hover {
+      background-color: rgba(255,255,255,0.1);
+    }
+    
+    header nav a.active, header nav button.active {
+      background-color: rgba(255,255,255,0.2);
+      border-bottom: 2px solid #ffcc00; /* Yellow accent */
+    }
+
+    /* Main Content Area */
+    #conteudo {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+      width: 100%;
+      user-select: text;
+    }
+
+    #conteudo h2 {
+      background-color: #003366;
+      color: white;
+      padding: 20px 25px;
+      border-radius: 8px;
+      font-size: 20px;
+      margin-bottom: 25px;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .programacao-btn {
+      background-color: #20c997;
+      color: white;
+      padding: 8px 16px;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      font-family: "Courier New", monospace;
+      font-size: 14px;
+      border-radius: 50px;
+      transition: all 0.3s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .admin-btn {
+      background-color: #ffcc00;
+      color: #003366;
+      padding: 8px 16px;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      font-family: "Courier New", monospace;
+      font-size: 14px;
+      border-radius: 50px;
+      transition: all 0.3s;
+      margin-left: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .programacao-btn:hover {
+      background-color: #1aa179;
+      transform: translateY(-2px);
+    }
+
+    .admin-btn:hover {
+      background-color: #ffd633;
+      transform: translateY(-2px);
+    }
+
+    .formulario {
+      border: 1px solid #e0e0e0;
+      background-color: #ffffff; /* White background for forms */
+      padding: 20px;
+      margin-bottom: 20px;
+      flex: 1;
+      min-width: 300px;
+      height: auto; /* Allow height to adjust */
+      display: flex;
+      flex-direction: column;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      position: relative;
+    }
+
+    label {
+      display: inline-block;
+      width: 100px;
+      margin-bottom: 4px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    input[type="text"], input[type="number"], input[type="date"] {
+      border: 1px solid #ccc;
+      padding: 8px 12px;
+      background-color: #f9f9f9;
+      font-family: "Courier New", monospace;
+      border-radius: 5px;
+      width: calc(100% - 100px);
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #003366;
+    }
+
+    .linha {
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .botoes-form {
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      display: flex;
+      justify-content: flex-end; /* Align to the right */
+      gap: 10px;
+    }
+
+    .botao-adicionar {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 20px;
+      font-weight: bold;
+      font-family: "Courier New", monospace;
+      border: none;
+      cursor: pointer;
+      user-select: none;
+      border-radius: 5px;
+      transition: all 0.3s;
+    }
+
+    .botao-adicionar:hover {
+      background-color: #0056b3;
+      transform: translateY(-2px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background-color: white;
+      font-size: 14px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+      user-select: text;
+      text-transform: uppercase;
+    }
+
+    th {
+      background-color: #e0e0e0;
+      color: #333;
+      font-weight: bold;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f8f8f8;
+    }
+
+    thead input, thead select {
+      width: 95%;
+      box-sizing: border-box;
+      font-family: "Courier New", monospace;
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    select {
+      font-family: "Courier New", monospace;
+      font-size: 13px;
+      padding: 4px;
+      width: 100%;
+      box-sizing: border-box;
+      user-select: none;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: white;
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+
+    .modal-content {
+      background: #f9f9f9;
+      padding: 25px 30px;
+      border-radius: 10px;
+      max-width: 90%;
+      width: 400px;
+      font-family: 'Courier New', monospace;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(0,0,0,0.2);
+    }
+    
+    .modal-content-large {
+      width: 90%;
+      max-width: 1200px;
+      height: 90vh;
+      max-height: 800px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-content-full {
+      width: 95%;
+      height: 95vh;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      background-color: #f0f0f0;
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      text-align: center;
+      color: #003366;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
+
+    .modal button {
+      padding: 8px 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Courier New', monospace;
+    }
+
+    .modal button:hover {
+      filter: brightness(0.9);
+    }
+    
+    .botoes-acao {
+      display: flex;
+      gap: 4px;
+      justify-content: flex-end;
+    }
+
+    .excluir-btn {
+      background-color: #dc3545;
+      color: white;
+      padding: 4px 8px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.3s;
+    }
+    .visualizar-btn {
+      background-color: #007bff;
+      color: white;
+      padding: 4px 8px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.3s;
+    }
+    .visualizar-btn:hover { background-color: #0056b3; }
+    .excluir-btn:hover { background-color: #c82333; }
+    
+    .floating-btn {
+      position: fixed;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: #003366;
+      color: white;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+    
+    .floating-btn:hover {
+      background-color: #005599;
+      transform: scale(1.05);
+    }
+    
+    #btn-finalizados { bottom: 20px; right: 20px; }
+    #btn-topo { bottom: 80px; right: 20px; }
+    
+    #tabela-finalizados {
+      margin-top: 40px;
+      border-top: 3px solid #003366;
+      padding-top: 25px;
+    }
+    
+    #tabela-finalizados h3 {
+      background-color: #003366;
+      color: white;
+      padding: 12px 20px;
+      font-size: 18px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .grafico-container {
+      width: 100%;
+      height: 240px;
+      min-height: 240px;
+      margin-top: 10px;
+    }
+
+    .grafico-container-barras {
+      width: 100%;
+      height: calc(100% - 100px);
+      min-height: 430px;
+      margin-top: 20px;
+    }
+    
+    #formularios-superiores {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: stretch;
+      margin-bottom: 20px;
+    }
+    
+    .formulario-cadastro {
+      flex: 1;
+      min-width: 320px;
+      max-width: 450px;
+    }
+    
+    .formulario-resumo {
+      flex: 1;
+      min-width: 250px;
+      max-width: 300px;
+    }
+    
+    .formulario-grafico {
+      flex: 2;
+      min-width: 400px;
+      min-height: 400px;
+    }
+    
+    @media screen and (max-width: 1200px) {
+      #formularios-superiores {
+        flex-direction: column;
+      }
+      
+      .formulario-cadastro,
+      .formulario-resumo,
+      .formulario-grafico {
+        max-width: 100%;
+      }
+    }
+    
+    .titulo-grafico {
+      margin-top: 0;
+      color: #003366;
+      text-align: center;
+      font-size: 18px;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    .filtro-ativo {
+      font-weight: bold;
+      text-decoration: underline;
+      color: #003366;
+    }
+    
+    .botoes-grafico {
+      display: flex;
+      justify-content: center;
+      margin-top: 15px;
+    }
+
+    .limpar-filtro-btn {
+      background-color: #f0f2f5;
+      color: #003366;
+      border: 1px solid #ccc;
+      padding: 8px 15px;
+      font-size: 12px;
+      border-radius: 50px;
+      transition: all 0.3s;
+    }
+    .limpar-filtro-btn:hover {
+      background-color: #e0e2e5;
+    }
+
+    .prioridade {
+      font-weight: bold;
+      text-align: center;
+      border-radius: 3px;
+      padding: 2px 5px;
+      font-size: 12px;
+    }
+
+    .prioridade-baixa { background-color: #d4edda; color: #155724; }
+    .prioridade-media { background-color: #fff3cd; color: #856404; }
+    .prioridade-alta { background-color: #f8d7da; color: #721c24; }
+    .prioridade-urgente { background-color: #721c24; color: white; }
+
+    .btn-resultado {
+      background-color: #003366;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 15px;
+      display: none;
+      width: 100%;
+      font-family: 'Courier New', monospace;
+      transition: all 0.3s;
+    }
+    .btn-resultado:hover { background-color: #004080; }
+
+    #btn-emitir-controle {
+      background-color: #28a745;
+      margin-top: 10px;
+    }
+    #btn-emitir-controle:hover { background-color: #218838; }
+
+    .filtro-mes {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 15px;
+      gap: 10px;
+    }
+    .filtro-mes select { width: 150px; }
+    
+    .tipo-acabamento {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 15px;
+    }
+
+    .tipo-acabamento button {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #003366;
+      background-color: #f0f2f5;
+      color: #003366;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      border-radius: 50px;
+    }
+
+    .tipo-acabamento button.active {
+      background-color: #003366;
+      color: white;
+    }
+
+    .tipo-acabamento button:hover {
+      background-color: #004080;
+      color: white;
+    }
+
+    /* Modal de Programação (Design Aprimorado) */
+    #modalProgramacao {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2000;
+      overflow: auto;
+      backdrop-filter: blur(5px);
+    }
+    
+    #modalProgramacao .modal-content {
+      background: #f5f7fa;
+      width: 95%; max-width: 1400px;
+      height: 90vh; margin: 5vh auto;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #e0e0e0;
+    }
+    .modal-header {
+      background: #003366; color: white;
+      padding: 15px 25px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .modal-header h3 { margin: 0; font-size: 22px; font-weight: 600; }
+    .close-btn {
+      background: none; border: none; color: white; font-size: 24px; cursor: pointer;
+      padding: 5px 10px; transition: all 0.3s;
+    }
+    .close-btn:hover { transform: scale(1.2); }
+    .programacao-container { display: flex; flex-direction: column; height: 100%; padding: 0; }
+    .programacao-controls {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px; padding: 15px; background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .control-group { display: flex; flex-direction: column; }
+    .control-group label { font-size: 12px; margin-bottom: 5px; color: #555; font-weight: bold; }
+    .control-group input, .control-group select {
+      padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;
+      font-family: 'Courier New', monospace; background: white; width: 100%;
+    }
+    .control-group input:focus, .control-group select:focus {
+      outline: none; border-color: #003366; box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.2);
+    }
+    .programacao-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 15px; flex: 1; overflow: hidden;
+    }
+    .programacao-section {
+      display: flex; flex-direction: column; background: white; border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #e0e0e0;
+    }
+    .programacao-section h4 {
+      margin: 0; padding: 12px 15px; background: #f0f2f5;
+      border-bottom: 1px solid #e0e0e0; font-size: 16px; color: #003366;
+      display: flex; justify-content: space-between;
+    }
+    .programacao-section h4 span {
+      background: #003366; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px;
+    }
+    .programacao-lista, .programacao-selecionados { flex: 1; overflow-y: auto; padding: 10px; }
+    .empty-state {
+      display: flex; align-items: center; justify-content: center; height: 100%;
+      color: #999; font-style: italic; font-size: 14px; text-align: center;
+    }
+    .programacao-item {
+      display: flex; align-items: center; padding: 10px; margin-bottom: 8px;
+      background: #fff; border: 1px solid #e0e0e0; border-radius: 6px;
+      transition: all 0.2s; cursor: pointer;
+    }
+    .programacao-item:hover { border-color: #003366; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .programacao-item input[type="checkbox"] { margin-right: 15px; cursor: pointer; }
+    .programacao-item-info { flex: 1; }
+    .programacao-item-codigo { font-weight: bold; color: #003366; margin-bottom: 3px; }
+    .programacao-item-descricao {
+      font-size: 12px; color: #555; margin-bottom: 5px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .programacao-selecionado {
+      display: flex; align-items: center; padding: 10px; margin-bottom: 8px;
+      background: #f8fafc; border: 1px solid #e0e0e0; border-left: 3px solid #003366;
+      border-radius: 6px;
+    }
+    .programacao-selecionado-info { flex: 1; }
+    .programacao-selecionado-remover {
+      color: #dc3545; cursor: pointer; font-weight: bold; margin-left: 10px;
+      padding: 5px; transition: all 0.2s;
+    }
+    .programacao-selecionado-remover:hover { transform: scale(1.2); }
+    .programacao-footer {
+      display: flex; justify-content: flex-end; padding: 15px; background: #fff;
+      border-top: 1px solid #e0e0e0; gap: 10px;
+    }
+    .btn-primary {
+      background: #003366; color: white; border: none; padding: 10px 20px; border-radius: 5px;
+      cursor: pointer; font-family: 'Courier New', monospace; font-weight: bold;
+      display: flex; align-items: center; gap: 5px; transition: all 0.2s;
+    }
+    .btn-primary:hover { background: #002244; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .btn-secondary {
+      background: #f0f2f5; color: #003366; border: 1px solid #ddd;
+      padding: 10px 20px; border-radius: 5px; cursor: pointer;
+      font-family: 'Courier New', monospace; font-weight: bold;
+      display: flex; align-items: center; gap: 5px; transition: all 0.2s;
+    }
+    .btn-secondary:hover { background: #e0e2e5; }
+
+    /* Responsividade */
+    @media (max-width: 1200px) {
+      .programacao-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      header { flex-direction: column; align-items: flex-start; gap: 10px; padding: 15px; }
+      header nav { flex-direction: column; width: 100%; gap: 5px; }
+      header nav a, header nav button { width: 100%; text-align: center; }
+      #conteudo h2 { flex-direction: column; align-items: flex-start; gap: 10px; padding: 15px; }
+      .programacao-btn, .admin-btn { width: 100%; }
+      .admin-btn { margin-left: 0; }
+      .programacao-controls { grid-template-columns: 1fr; }
+      #modalProgramacao .modal-content { width: 98%; height: 98vh; margin: 1vh auto; }
+      .formulario-cadastro .botoes-form { flex-direction: column; align-items: stretch; }
+      .botao-adicionar { width: 100%; }
+      .floating-btn { width: 40px; height: 40px; font-size: 16px; }
+      #btn-finalizados { bottom: 10px; right: 10px; }
+      #btn-topo { bottom: 60px; right: 10px; }
+    }
+
+  </style>
+</head>
+<body>
+
+<div id="container">
+  <header>
+    <h1>PCP Erus</h1>
+    <nav>
+      <a href="#" class="active" id="btn-programacoes">Acabamento</a>
+      <a href="http://192.168.10.5:8000/faturamento">Faturamento</a>
+      <a href="CARTEIRA.html" id="btn-kanban">Pedidos</a>
+      <a href="REFUGO.html" id="btn-pedido">Refugo</a>
+    </nav>
+  </header>
+
+  <main id="conteudo">
+    <section id="carteira">
+      <h2>PROGRAMAÇÃO DE ACABAMENTO 
+        <div>
+          <button class="programacao-btn" id="btn-programacao">PROGRAMAÇÃO</button>
+          <button class="admin-btn" id="btn-admin" onclick="window.location.href='dashboard.html'">SISTEMA</button>
+        </div>
+      </h2>
+
+      <div id="formularios-superiores">
+        <div class="formulario formulario-cadastro">
+          <h3 class="titulo-grafico">CADASTRO</h3>
+          <div class="tipo-acabamento">
+            <button id="btn-interno" class="active">INTERNO</button>
+            <button id="btn-terceiro">TERCEIRO</button>
+          </div>
+          <div class="linha"><label>Data:</label><input type="date" id="data" autocomplete="off"></div>
+          <div class="linha"><label>Código:</label><input type="text" id="codigo" autocomplete="off"></div>
+          <div class="linha"><label>OP:</label><input type="text" id="op" autocomplete="off"></div>
+          <div class="linha"><label>Descrição:</label><input type="text" id="descricao" autocomplete="off"></div>
+          <div class="linha"><label>Quant.:</label><input type="number" id="quant" autocomplete="off"></div>
+          <div class="linha"><label>Material:</label><input type="text" id="material" autocomplete="off"></div>
+          <div class="linha"><label>Cliente:</label><input type="text" id="cliente" autocomplete="off"></div>
+          <div class="linha" id="terceiro-container" style="display: none;">
+            <label>Terceiro:</label>
+            <input type="text" id="terceiro" autocomplete="off">
+          </div>
+          <div class="linha" id="peso-container" style="display: none;">
+            <label>Peso Un.:</label><input type="number" id="peso" step="0.01" autocomplete="off">
+          </div>
+          <div class="botoes-form">
+            <button class="botao-adicionar" onclick="adicionarLinha()">Adicionar</button>
+          </div>
+        </div>
+
+        <div class="formulario formulario-resumo">
+          <h3 class="titulo-grafico">RESUMO</h3>
+          <div class="linha"><strong>Total:</strong> <span id="contar-total">0</span></div>
+          <div class="linha"><strong>A definir:</strong> <span id="contar-definir">0</span></div>
+          <div class="linha"><strong>Rebarbando:</strong> <span id="contar-rebarbando">0</span></div>
+          <div class="linha"><strong>Tratamento:</strong> <span id="contar-tratamento">0</span></div>
+          <button id="btn-resultado" class="btn-resultado" onclick="abrirModalGraficoPeso()">RESULTADO</button>
+          <button id="btn-emitir-controle" class="btn-resultado" onclick="emitirControleTerceiros()" style="display: none;">EMITIR CONTROLE</button>
+        </div>
+
+        <div class="formulario formulario-grafico grafico">
+          <h3 class="titulo-grafico">DISTRIBUIÇÃO (%) <span id="filtro-ativo-indicador"></span></h3>
+          <div class="grafico-container">
+            <canvas id="graficoSituacao"></canvas>
+          </div>
+          <div class="botoes-grafico">
+            <button class="limpar-filtro-btn" onclick="limparFiltroGrafico()">Limpar Filtro</button>
+          </div>
+        </div>
+      </div>
+
+      <table id="tabela">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th style="width: 70px;">OP</th>
+            <th style="width: 280px;">Descrição</th>
+            <th>Quant.</th>
+            <th>Material</th>
+            <th>Cliente</th>
+            <th>Terceiro</th>
+            <th>Prioridade</th>
+            <th style="width: 150px;">Observações</th>
+            <th style="width: 125px;">Situação</th>
+            <th>Ação</th>
+          </tr>
+          <tr>
+            <th><input type="text" id="filtroCodigo" oninput="atualizarTabela()" autocomplete="off"></th>
+            <th><input type="text" id="filtroOP" oninput="atualizarTabela()" autocomplete="off"></th>
+            <th><input type="text" id="filtroDescricao" oninput="atualizarTabela()" autocomplete="off"></th>
+            <th></th>
+            <th><input type="text" id="filtroMaterial" oninput="atualizarTabela()" autocomplete="off"></th>
+            <th><input type="text" id="filtroCliente" oninput="atualizarTabela()" autocomplete="off"></th>
+            <th><input type="text" id="filtroTerceiro" oninput="atualizarTabela()" autocomplete="off"></th>
+            <th>
+              <select id="filtroPrioridade" onchange="atualizarTabela()">
+                <option value="">Todas</option>
+                <option value="baixa">Baixa</option>
+                <option value="media">Média</option>
+                <option value="alta">Alta</option>
+                <option value="urgente">Urgente</option>
+              </select>
+            </th>
+            <th></th>
+            <th>
+              <select id="filtroSituacao" onchange="atualizarTabela()">
+                <option value="">Todas</option>
+                <option value="a definir">A definir</option>
+                <option value="rebarbando">Rebarbando</option>
+                <option value="tratamento">Tratamento</option>
+              </select>
+            </th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      
+      <div id="tabela-finalizados">
+        <h3>ITENS FINALIZADOS</h3>
+        <table id="tabela-finalizados-content">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Código</th>
+              <th style="width: 70px;">OP</th>
+              <th style="width: 280px;">Descrição</th>
+              <th>Quant.</th>
+              <th>Material</th>
+              <th>Cliente</th>
+              <th style="width: 125px;">Finalização</th>
+              <th>Ação</th>
+            </tr>
+            <tr>
+              <th><input type="date" id="filtroDataFinalizados" oninput="atualizarTabelaFinalizados()"></th>
+              <th><input type="text" id="filtroCodigoFinalizados" oninput="atualizarTabelaFinalizados()"></th>
+              <th><input type="text" id="filtroOPFinalizados" oninput="atualizarTabelaFinalizados()"></th>
+              <th><input type="text" id="filtroDescricaoFinalizados" oninput="atualizarTabelaFinalizados()"></th>
+              <th></th>
+              <th><input type="text" id="filtroMaterialFinalizados" oninput="atualizarTabelaFinalizados()"></th>
+              <th><input type="text" id="filtroClienteFinalizados" oninput="atualizarTabelaFinalizados()"></th>
+              <th><input type="date" id="filtroDataFinalizacao" oninput="atualizarTabelaFinalizados()"></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="modalTimeout" class="modal">
+  <div class="modal-content">
+    <h3>Sessão Expirando</h3>
+    <p>Você será redirecionado para a tela de login em:</p>
+    <div id="timeoutCountdown">10</div>
+    <p>Para continuar trabalhando, mova o mouse ou pressione qualquer tecla</p>
+    <button onclick="resetTimeout()" style="margin-top: 15px; background: #007bff; color: white;">Continuar</button>
+  </div>
+</div>
+
+<div id="modalSenhaExclusao" class="modal">
+  <div class="modal-content">
+    <h3>Confirmação de Exclusão</h3>
+    <p>Tem certeza que deseja excluir este item?</p>
+    <div style="text-align: right; margin-top: 20px;">
+      <button onclick="confirmarExclusao()" style="background: #28a745; color: white;">Confirmar</button>
+      <button onclick="cancelarExclusao()" style="margin-left:10px; background: #dc3545; color: white;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalProgramacao" class="modal">
+  <div class="modal-content modal-content-large">
+    <div class="modal-header">
+      <h3>Programação de Acabamento</h3>
+      <button class="close-btn" onclick="fecharModalProgramacao()">×</button>
+    </div>
+    
+    <div class="programacao-container">
+      <div class="programacao-controls">
+        <div class="control-group">
+          <label for="filtro-programacao">Código/OP:</label>
+          <input type="text" id="filtro-programacao" placeholder="Digite para filtrar..." oninput="filtrarItensProgramacao()">
+        </div>
+        
+        <div class="control-group">
+          <label for="data-entrega">Data:</label>
+          <input type="date" id="data-entrega">
+        </div>
+        
+        <div class="control-group">
+          <label for="filtro-situacao-programacao">Situação:</label>
+          <select id="filtro-situacao-programacao" onchange="filtrarItensProgramacao()">
+            <option value="">Todas situações</option>
+            <option value="a definir">A definir</option>
+            <option value="rebarbando">Rebarbando</option>
+            <option value="tratamento">Tratamento</option>
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <label for="filtro-prioridade-programacao">Prioridade:</label>
+          <select id="filtro-prioridade-programacao" onchange="filtrarItensProgramacao()">
+            <option value="">Todas prioridades</option>
+            <option value="baixa">Baixa</option>
+            <option value="media">Média</option>
+            <option value="alta">Alta</option>
+            <option value="urgente">Urgente</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="programacao-grid">
+        <div class="programacao-section">
+          <h4>
+            <input type="checkbox" id="marcar-todos" onchange="toggleSelecionarTodos(this.checked)">
+            Itens Disponíveis <span id="contagem-disponiveis">0</span>
+          </h4>
+          <div class="programacao-lista" id="lista-programacao">
+            </div>
+        </div>
+        
+        <div class="programacao-section">
+          <h4>Itens Selecionados <span id="contagem-selecionados">0</span></h4>
+          <div class="programacao-selecionados" id="selecionados-programacao">
+            <div class="empty-state">Nenhum item selecionado</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="programacao-footer">
+        <button class="btn-secondary" onclick="fecharModalProgramacao()">Cancelar</button>
+        <button class="btn-primary" onclick="gerarProgramacaoPDF()">Gerar Programação PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modalGraficoPeso" class="modal">
+  <div class="modal-content modal-content-full">
+    <div class="modal-grafico-header">
+      <h3 class="modal-grafico-title">PESO TOTAL POR DIA - TERCEIROS</h3>
+      <button class="modal-grafico-close" onclick="fecharModalGraficoPeso()">×</button>
+    </div>
+    <div class="filtro-mes">
+      <select id="filtroMes" onchange="atualizarGraficoBarras()">
+        <option value="todos">Todos os meses</option>
+        <option value="1">Janeiro</option>
+        <option value="2">Fevereiro</option>
+        <option value="3">Março</option>
+        <option value="4">Abril</option>
+        <option value="5">Maio</option>
+        <option value="6">Junho</option>
+        <option value="7">Julho</option>
+        <option value="8">Agosto</option>
+        <option value="9">Setembro</option>
+        <option value="10">Outubro</option>
+        <option value="11">Novembro</option>
+        <option value="12">Dezembro</option>
+      </select>
+      <select id="filtroAno" onchange="atualizarGraficoBarras()">
+        <option value="todos">Todos os anos</option>
+        <option value="2023">2023</option>
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+      </select>
+    </div>
+    <div class="grafico-container-barras">
+      <canvas id="graficoBarras"></canvas>
+    </div>
+  </div>
+</div>
+
+<button id="btn-finalizados" class="floating-btn" onclick="scrollToFinalizados()" title="Ir para finalizados">↓</button>
+<button id="btn-topo" class="floating-btn" onclick="scrollToTop()" title="Voltar ao topo">↑</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<script>
+  document.getElementById('btn-kanban').onclick = () => {
+    window.location.href = 'CARTEIRA.html';
+};
+  document.getElementById('btn-pedido').onclick = () => {
+    window.location.href = 'REFUGO.html';
+};
+
+  let registros = [];
+  let grafico = null;
+  let graficoBarras = null;
+  let timeoutTimer;
+  let countdownTimer;
+  let countdown = 10;
+  const INACTIVITY_TIMEOUT = 100 * 60 * 1000; // 3 minutos em milissegundos
+  const COUNTDOWN_DURATION = 10; // 10 segundos
+  let filtroAtivo = null;
+  let isAdminActive = false;
+  let indiceParaExcluir = null;
+  const SENHA_ADMIN = "PCPERUS"; // Senha para exclusão e acesso admin
+  let tipoAcabamentoAtual = "interno"; // "interno" ou "terceiro"
+  let tabelaAtual = "interno"; // Controla qual tabela está sendo exibida
+  let itensSelecionadosProgramacao = []; // Itens selecionados para programação
+
+  function alternarTabela(tipo) {
+    tabelaAtual = tipo;
+    
+    // Atualiza os botões do formulário de cadastro
+    document.getElementById('btn-interno').classList.toggle('active', tipo === 'interno');
+    document.getElementById('btn-terceiro').classList.toggle('active', tipo === 'terceiro');
+    
+    // Define o tipo de acabamento atual para o cadastro
+    tipoAcabamentoAtual = tipo;
+    
+    // Mostra/oculta campos conforme o tipo
+    document.getElementById('peso-container').style.display = tipo === 'terceiro' ? 'flex' : 'none';
+    document.getElementById('terceiro-container').style.display = tipo === 'terceiro' ? 'flex' : 'none';
+    
+    // Mostra/oculta botões de resultado e controle
+    document.getElementById('btn-resultado').style.display = tipo === 'terceiro' ? 'block' : 'none';
+    document.getElementById('btn-emitir-controle').style.display = tipo === 'terceiro' ? 'block' : 'none';
+    
+    // Atualiza as tabelas
+    atualizarTabela();
+    atualizarTabelaFinalizados();
+}
+
+  // Função para formatar a data no padrão brasileiro
+  function formatarData(data) {
+    const dia = String(data.getDate()).padStart(2, '0');
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const ano = data.getFullYear();
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  // Função para formatar a hora no padrão brasileiro
+  function formatarHora(data) {
+    const hora = String(data.getHours()).padStart(2, '0');
+    const minutos = String(data.getMinutes()).padStart(2, '0');
+    const segundos = String(data.getSeconds()).padStart(2, '0');
+    return `${hora}:${minutos}:${segundos}`;
+  }
+
+  function emitirControleTerceiros() {
+    // Obter o valor do filtro de terceiro
+    const filtroTerceiro = document.getElementById("filtroTerceiro").value.toLowerCase();
+    
+    // Filtrar apenas os registros de terceiros com o filtro aplicado
+    const registrosTerceiros = registros.filter(reg => 
+        reg.tipo === 'terceiro' && 
+        reg.situacao !== 'finalizada' &&
+        (!filtroTerceiro || (reg.terceiro && reg.terceiro.includes(filtroTerceiro)))
+    );
+    
+    if (registrosTerceiros.length === 0) {
+        alert("Não há itens de terceiro para emitir controle");
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+    });
+
+    // Configurações de estilo
+    doc.setFont("Courier", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(0, 51, 102);
+    
+    // Cabeçalho
+    const tituloTerceiro = filtroTerceiro ? `CONTROLE DE REBARBAÇÃO - ${filtroTerceiro.toUpperCase()}` : 'CONTROLE DE REBARBAÇÃO EM TERCEIRO';
+    doc.text(tituloTerceiro, 140, 15, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setFont("Courier", "normal");
+    doc.text(`Data de Emissão: ${formatarData(new Date())}`, 20, 25);
+    doc.text(`Total de Itens: ${registrosTerceiros.length}`, 260, 25, { align: 'right' });
+    
+    // Linha divisória
+    doc.setDrawColor(0, 51, 102);
+    doc.setLineWidth(0.5);
+    doc.line(20, 30, 270, 30);
+    
+    // Configurações da tabela
+    const headers = [
+        { title: "Data", dataKey: "data" },
+        { title: "Código", dataKey: "codigo" },
+        { title: "OP", dataKey: "op" },
+        { title: "Descrição", dataKey: "descricao" },
+        { title: "Quant.", dataKey: "quant" },
+        { title: "Peso Un.", dataKey: "peso" },
+        { title: "Peso Total", dataKey: "pesoTotal" },
+        { title: "Material", dataKey: "material" },
+        { title: "Cliente", dataKey: "cliente" },
+        { title: "Terceiro", dataKey: "terceiro" },
+        { title: "Observações", dataKey: "observacoes" }
+    ];
+    
+    const dadosTabela = registrosTerceiros.map(reg => {
+        const peso = parseFloat(reg.peso) || 0;
+        const quant = parseInt(reg.quant) || 0;
+        const pesoTotal = (peso * quant).toFixed(2);
+        
+        return {
+            data: formatarData(new Date(reg.data)),
+            codigo: reg.codigo.toUpperCase(),
+            op: reg.op.toUpperCase(),
+            descricao: reg.descricao.toUpperCase(),
+            quant: reg.quant,
+            peso: reg.peso || '-',
+            pesoTotal: pesoTotal,
+            material: reg.material.toUpperCase(),
+            cliente: reg.cliente.toUpperCase(),
+            terceiro: reg.terceiro ? reg.terceiro.toUpperCase() : '-',
+            observacoes: reg.observacoes || '-'
+        };
+    });
+    
+    // Calcular totais
+    const totalQuant = dadosTabela.reduce((acc, item) => acc + (parseInt(item.quant) || 0), 0);
+    const totalPeso = dadosTabela.reduce((acc, item) => acc + (parseFloat(item.pesoTotal) || 0), 0);
+    
+    // Gerar tabela
+    doc.autoTable({
+        startY: 35,
+        head: [headers.map(h => h.title)],
+        body: dadosTabela.map(row => headers.map(h => row[h.dataKey])),
+        theme: 'grid',
+        styles: {
+            font: 'Courier',
+            fontSize: 8,
+            cellPadding: 3,
+            textColor: [0, 0, 0],
+            lineWidth: 0.1
+        },
+        headStyles: {
+            fillColor: [0, 51, 102],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+            fillColor: [240, 240, 240]
+        },
+        columnStyles: {
+            0: { cellWidth: 18 },
+            1: { cellWidth: 25 },
+            2: { cellWidth: 15 },
+            3: { cellWidth: 40 },
+            4: { cellWidth: 15 },
+            5: { cellWidth: 18 },
+            6: { cellWidth: 18 },
+            7: { cellWidth: 25 },
+            8: { cellWidth: 25 },
+            9: { cellWidth: 25 },
+            10: { cellWidth: 35 }
+        },
+        margin: { left: 20, right: 20 },
+        foot: [['', '', '', 'TOTAL:', totalQuant, '', totalPeso.toFixed(2), '', '', '', '', '']],
+        footStyles: {
+            fillColor: [220, 220, 220],
+            textColor: [0, 0, 0],
+            fontStyle: 'bold'
+        }
+    });
+    
+    const pageCount = doc.internal.getNumberOfPages();
+    for(let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text("PCP Erus - Controle de Rebarbação em Terceiro", 20, doc.internal.pageSize.height - 10);
+        doc.text(`Página ${i} de ${pageCount}`, 270, doc.internal.pageSize.height - 10, { align: 'right' });
+    }
+    
+    const nomeArquivo = filtroTerceiro ? 
+        `CONTROLE_${filtroTerceiro.toUpperCase()}_${new Date().toISOString().split('T')[0]}.pdf` :
+        `CONTROLE_TERCEIROS_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(nomeArquivo);
+}
+
+  function setupTimeout() {
+    resetTimeout();
+    ['mousemove', 'keydown', 'click', 'scroll'].forEach(event => {
+      document.addEventListener(event, resetTimeout);
+    });
+  }
+  
+  function resetTimeout() {
+    clearTimeout(timeoutTimer);
+    clearInterval(countdownTimer);
+    document.getElementById('modalTimeout').style.display = 'none';
+    countdown = COUNTDOWN_DURATION;
+    document.getElementById('timeoutCountdown').textContent = countdown;
+    timeoutTimer = setTimeout(showTimeoutWarning, INACTIVITY_TIMEOUT);
+  }
+  
+  function showTimeoutWarning() {
+    document.getElementById('modalTimeout').style.display = 'flex';
+    countdownTimer = setInterval(() => {
+      countdown--;
+      document.getElementById('timeoutCountdown').textContent = countdown;
+      if (countdown <= 0) {
+        clearInterval(countdownTimer);
+        redirectToLogin();
+      }
+    }, 1000);
+  }
+  
+  function redirectToLogin() {
+    window.location.href = 'index.html';
+  }
+
+  function abrirModalAdminPanel() {
+    document.getElementById('modalAdminPanel').style.display = 'flex';
+    document.getElementById('adminInput').focus();
+    atualizarPainelAdmin();
+  }
+
+  function fecharModalAdminPanel() {
+    document.getElementById('modalAdminPanel').style.display = 'none';
+  }
+
+  function atualizarPainelAdmin() {
+    document.getElementById('admin-total-registros').textContent = registros.length;
+    document.getElementById('admin-registros-interno').textContent = registros.filter(r => r.tipo === 'interno').length;
+    document.getElementById('admin-registros-terceiro').textContent = registros.filter(r => r.tipo === 'terceiro').length;
+    document.getElementById('admin-registros-finalizados').textContent = registros.filter(r => r.situacao === 'finalizada').length;
+    
+    const userList = document.getElementById('admin-user-list');
+    userList.innerHTML = '';
+    
+    const users = [
+      { id: 1, username: 'admin', role: 'Administrador', active: true },
+      { id: 2, username: 'hyuri', role: 'Usuário', active: true },
+      { id: 3, username: 'operador', role: 'Operador', active: false }
+    ];
+    
+    users.forEach(user => {
+      const li = document.createElement('li');
+      li.className = 'admin-user-item';
+      li.innerHTML = `
+        <div>
+          <strong>${user.username}</strong><br>
+          <small>${user.role} • ${user.active ? 'Ativo' : 'Inativo'}</small>
+        </div>
+        <div class="admin-user-actions">
+          <button onclick="adminEditarUsuario(${user.id})">Editar</button>
+          <button onclick="adminResetarSenha(${user.id})">Resetar Senha</button>
+        </div>
+      `;
+      userList.appendChild(li);
+    });
+    
+    const logList = document.getElementById('admin-log-list');
+    logList.innerHTML = '';
+    
+    const logs = [
+      { time: new Date(), message: 'Usuário hyuri fez login' },
+      { time: new Date(Date.now() - 1000 * 60 * 5), message: 'Registro #1234 atualizado' },
+      { time: new Date(Date.now() - 1000 * 60 * 30), message: 'Backup automático realizado' }
+    ];
+    
+    logs.forEach(log => {
+      const li = document.createElement('li');
+      li.className = 'admin-log-item';
+      li.innerHTML = `<span class="admin-log-time">${formatarHora(log.time)}</span> ${log.message}`;
+      logList.appendChild(li);
+    });
+  }
+
+  function handleAdminCommand(event) {
+    if (event.key === 'Enter') {
+      const input = document.getElementById('adminInput');
+      const command = input.value.trim();
+      input.value = '';
+      
+      const console = document.getElementById('adminConsole');
+      console.innerHTML += `> ${command}<br>`;
+      
+      if (command === 'help') {
+        console.innerHTML += `Comandos disponíveis:<br>
+        - help: Mostra esta ajuda<br>
+        - list: Lista usuários e permissões<br>
+        - grant [user]: Concede permissões<br>
+        - revoke [user]: Remove permissões<br>
+        - backup: Cria backup do banco de dados<br>
+        - restore: Restaura backup<br>
+        - exit: Fecha o painel<br><br>`;
+      } 
+      else if (command === 'list') {
+        console.innerHTML += `Lista de usuários e permissões:<br>
+        - admin: Permissões totais<br>
+        - user1: Permissões básicas<br>
+        - user2: Permissões básicas<br><br>`;
+      }
+      else if (command.startsWith('grant ')) {
+        const user = command.split(' ')[1];
+        console.innerHTML += `Permissões concedidas para ${user || 'nenhum usuário especificado'}<br><br>`;
+        adicionarLogAdmin(`Permissões concedidas para ${user}`);
+      }
+      else if (command.startsWith('revoke ')) {
+        const user = command.split(' ')[1];
+        console.innerHTML += `Permissões revogadas para ${user || 'nenhum usuário especificado'}<br><br>`;
+        adicionarLogAdmin(`Permissões revogadas para ${user}`);
+      }
+      else if (command === 'backup') {
+        console.innerHTML += `Backup criado com sucesso<br><br>`;
+        adicionarLogAdmin('Backup do banco de dados criado');
+      }
+      else if (command === 'restore') {
+        console.innerHTML += `Backup restaurado com sucesso<br><br>`;
+        adicionarLogAdmin('Backup do banco de dados restaurado');
+      }
+      else if (command === 'exit') {
+        fecharModalAdminPanel();
+      }
+      else {
+        console.innerHTML += `Comando não reconhecido. Digite 'help' para ajuda.<br><br>`;
+      }
+      
+      console.scrollTop = console.scrollHeight;
+    }
+  }
+
+  function adicionarLogAdmin(mensagem) {
+    const logList = document.getElementById('admin-log-list');
+    const li = document.createElement('li');
+    li.className = 'admin-log-item';
+    li.innerHTML = `<span class="admin-log-time">${formatarHora(new Date())}</span> ${mensagem}`;
+    logList.insertBefore(li, logList.firstChild);
+  }
+
+  function adminEditarUsuario(userId) {
+    alert(`Editar usuário ${userId} - Funcionalidade em desenvolvimento`);
+  }
+
+  function adminResetarSenha(userId) {
+    alert(`Resetar senha do usuário ${userId} - Funcionalidade em desenvolvimento`);
+  }
+
+  function abrirModalGraficoPeso() {
+    document.getElementById('modalGraficoPeso').style.display = 'flex';
+    atualizarGraficoBarras();
+  }
+
+  function fecharModalGraficoPeso() {
+    document.getElementById('modalGraficoPeso').style.display = 'none';
+  }
+
+  function atualizarGraficoBarras() {
+    const mesSelecionado = document.getElementById('filtroMes').value;
+    const anoSelecionado = document.getElementById('filtroAno').value;
+    
+    const dadosPorData = {};
+    registros
+      .filter(reg => {
+        if (reg.tipo !== 'terceiro' || !reg.peso || !reg.quant) return false;
+        
+        const dataRegistro = new Date(reg.data);
+        const mesRegistro = dataRegistro.getMonth() + 1;
+        const anoRegistro = dataRegistro.getFullYear();
+        
+        if (mesSelecionado !== 'todos' && mesRegistro != mesSelecionado) return false;
+        if (anoSelecionado !== 'todos' && anoRegistro != anoSelecionado) return false;
+        
+        return true;
+      })
+      .forEach(reg => {
+        if (!dadosPorData[reg.data]) {
+          dadosPorData[reg.data] = 0;
+        }
+        dadosPorData[reg.data] += parseFloat(reg.peso) * parseInt(reg.quant);
+      });
+
+    const datasOrdenadas = Object.keys(dadosPorData).sort();
+    const pesos = datasOrdenadas.map(data => dadosPorData[data]);
+
+    const ctx = document.getElementById('graficoBarras').getContext('2d');
+    if (graficoBarras) {
+      graficoBarras.destroy();
+    }
+
+    function formatarNumeroBrasileiro(numero) {
+      return numero.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    graficoBarras = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: datasOrdenadas,
+        datasets: [{
+          label: 'Peso Total (kg)',
+          data: pesos,
+          backgroundColor: '#003366',
+          borderColor: '#001a33',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Peso Total (kg)'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Data'
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return `Peso Total: ${formatarNumeroBrasileiro(context.raw)} kg`;
+              }
+            }
+          }
+        }
+      },
+      plugins: [{
+        id: 'datalabels',
+        afterDraw: function(chart) {
+          const ctx = chart.ctx;
+          ctx.save();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.font = 'bold 12px Courier New';
+          
+          chart.data.datasets.forEach((dataset, i) => {
+            const meta = chart.getDatasetMeta(i);
+            meta.data.forEach((bar, index) => {
+              const data = dataset.data[index];
+              ctx.fillText(formatarNumeroBrasileiro(data), bar.x, bar.y - 5);
+            });
+          });
+          
+          ctx.restore();
+        }
+      }]
+    });
+  }
+
+  function abrirModalProgramacao() {
+    document.getElementById('modalProgramacao').style.display = 'flex';
+    document.getElementById('data-entrega').value = new Date().toISOString().split('T')[0];
+    itensSelecionadosProgramacao = [];
+    atualizarListaProgramacao();
+    atualizarSelecionadosProgramacao();
+  }
+
+  function fecharModalProgramacao() {
+    document.getElementById('modalProgramacao').style.display = 'none';
+  }
+
+  function filtrarItensProgramacao() {
+    atualizarListaProgramacao();
+  }
+
+  function atualizarListaProgramacao() {
+    const filtro = document.getElementById('filtro-programacao').value.toLowerCase();
+    const filtroSituacao = document.getElementById('filtro-situacao-programacao').value;
+    const filtroPrioridade = document.getElementById('filtro-prioridade-programacao').value;
+    
+    const lista = document.getElementById('lista-programacao');
+    lista.innerHTML = '';
+
+    const itensAgrupados = {};
+    registros
+      .filter(reg => reg.tipo === tabelaAtual && reg.situacao !== 'finalizada')
+      .filter(reg => {
+        if (filtroSituacao && reg.situacao !== filtroSituacao) return false;
+        if (filtroPrioridade && reg.prioridade !== filtroPrioridade) return false;
+        return true;
+      })
+      .forEach(reg => {
+        if (!itensAgrupados[reg.codigo]) {
+          itensAgrupados[reg.codigo] = [];
+        }
+        itensAgrupados[reg.codigo].push(reg);
+      });
+
+    const itensFiltrados = Object.entries(itensAgrupados)
+      .filter(([codigo, itens]) => 
+        codigo.toLowerCase().includes(filtro) || 
+        itens.some(item => item.op.toLowerCase().includes(filtro)))
+      .sort((a, b) => a[0].localeCompare(b[0]));
+
+    if (itensFiltrados.length === 0) {
+      lista.innerHTML = '<p>Nenhum item encontrado</p>';
+      return;
+    }
+
+    itensFiltrados.forEach(([codigo, itens]) => {
+      itens.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'programacao-item';
+        div.innerHTML = `
+          <input type="checkbox" id="item-${item.id}" 
+            onchange="toggleItemProgramacao(${item.id}, this.checked)"
+            ${itensSelecionadosProgramacao.some(i => i.id === item.id) ? 'checked' : ''}>
+          <div class="programacao-item-info">
+            <div class="programacao-item-codigo">${item.codigo.toUpperCase()} - OP: ${item.op.toUpperCase()}</div>
+            <div class="programacao-item-descricao">${item.descricao.toUpperCase()}</div>
+            <div>Quant: ${item.quant} • ${item.material.toUpperCase()}</div>
+            <div>Situação: ${item.situacao.toUpperCase()} • Prioridade: ${getPrioridadeText(item.prioridade)}</div>
+          </div>
+        `;
+        lista.appendChild(div);
+      });
+    });
+  }
+
+  function toggleItemProgramacao(id, checked) {
+    const item = registros.find(r => r.id === id);
+    if (!item) return;
+
+    if (checked) {
+      if (!itensSelecionadosProgramacao.some(i => i.id === id)) {
+        itensSelecionadosProgramacao.push(item);
+      }
+    } else {
+      itensSelecionadosProgramacao = itensSelecionadosProgramacao.filter(i => i.id !== id);
+    }
+
+    atualizarSelecionadosProgramacao();
+  }
+
+  function atualizarSelecionadosProgramacao() {
+    const container = document.getElementById('selecionados-programacao');
+    container.innerHTML = '';
+
+    if (itensSelecionadosProgramacao.length === 0) {
+      container.innerHTML = '<p>Nenhum item selecionado</p>';
+      return;
+    }
+
+    itensSelecionadosProgramacao.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'programacao-selecionado';
+      div.innerHTML = `
+        <div class="programacao-selecionado-info">
+          <strong>${item.codigo.toUpperCase()} - OP: ${item.op.toUpperCase()}</strong><br>
+          ${item.descricao.toUpperCase()} • Quant: ${item.quant}<br>
+          Situação: ${item.situacao.toUpperCase()} • Prioridade: ${getPrioridadeText(item.prioridade)}
+        </div>
+        <div class="programacao-selecionado-remover" onclick="removerItemProgramacao(${item.id})">X</div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  function removerItemProgramacao(id) {
+    itensSelecionadosProgramacao = itensSelecionadosProgramacao.filter(i => i.id !== id);
+    atualizarListaProgramacao();
+    atualizarSelecionadosProgramacao();
+  }
+
+  function gerarProgramacaoPDF() {
+    if (itensSelecionadosProgramacao.length === 0) {
+      alert("Selecione pelo menos um item para gerar a programação");
+      return;
+    }
+
+    const dataEntrega = document.getElementById('data-entrega').value;
+    if (!dataEntrega) {
+      alert("Informe a data de entrega");
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    doc.setFont("Courier", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(0, 51, 102);
+    
+    doc.text("PROGRAMAÇÃO DE ACABAMENTO", 140, 15, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setFont("Courier", "normal");
+    doc.text(`Data de Emissão: ${formatarData(new Date())}`, 20, 25);
+    doc.text(`Data de Entrega: ${formatarData(new Date(dataEntrega))}`, 140, 25, { align: 'center' });
+    doc.text(`Tipo: ${tabelaAtual.toUpperCase()}`, 260, 25, { align: 'right' });
+    
+    doc.setDrawColor(0, 51, 102);
+    doc.setLineWidth(0.5);
+    doc.line(20, 30, 280, 30);
+    
+    const headers = [
+      { title: "Data", dataKey: "data" },
+      { title: "Código", dataKey: "codigo" },
+      { title: "OP", dataKey: "op" },
+      { title: "Descrição", dataKey: "descricao" },
+      { title: "Quant.", dataKey: "quant" },
+      ...(tabelaAtual === 'terceiro' ? [{ title: "Peso Un.", dataKey: "peso" }] : []),
+      { title: "Material", dataKey: "material" },
+      { title: "Cliente", dataKey: "cliente" },
+      { title: "Prioridade", dataKey: "prioridade" },
+      { title: "Situação", dataKey: "situacao" }
+    ];
+    
+    const dadosTabela = itensSelecionadosProgramacao.map(reg => ({
+      data: formatarData(new Date(reg.data)),
+      codigo: reg.codigo.toUpperCase(),
+      op: reg.op.toUpperCase(),
+      descricao: reg.descricao.toUpperCase(),
+      quant: reg.quant,
+      ...(tabelaAtual === 'terceiro' && { peso: reg.peso || '-' }),
+      material: reg.material.toUpperCase(),
+      cliente: reg.cliente.toUpperCase(),
+      prioridade: getPrioridadeText(reg.prioridade),
+      situacao: reg.situacao.toUpperCase()
+    }));
+    
+    doc.autoTable({
+      startY: 35,
+      head: [headers.map(h => h.title)],
+      body: dadosTabela.map(row => headers.map(h => row[h.dataKey])),
+      theme: 'grid',
+      styles: {
+        font: 'Courier',
+        fontSize: 8,
+        cellPadding: 3,
+        textColor: [0, 0, 0],
+        lineWidth: 0.1
+      },
+      headStyles: {
+        fillColor: [0, 51, 102],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: {
+        fillColor: [240, 240, 240]
+      },
+      columnStyles: {
+        0: { cellWidth: 20 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 15 },
+        3: { cellWidth: 50 },
+        4: { cellWidth: 15 },
+        ...(tabelaAtual === 'terceiro' ? { 5: { cellWidth: 15 } } : {}),
+        material: { cellWidth: 30 },
+        cliente: { cellWidth: 30 },
+        prioridade: { cellWidth: 20 },
+        situacao: { cellWidth: 20 }
+      },
+      margin: { left: 20, right: 20 }
+    });
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text("PCP Erus - Sistema de Programação de Acabamento", 20, 200);
+    doc.text(`Total de itens: ${itensSelecionadosProgramacao.length}`, 260, 200, { align: 'right' });
+    
+    const nomeArquivo = `PROG_${tabelaAtual.toUpperCase()}_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(nomeArquivo);
+    
+    fetch('/api/save-programacao', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        data_entrega: dataEntrega,
+        itens: itensSelecionadosProgramacao.map(i => i.id),
+        nome_arquivo: nomeArquivo
+      })
+    }).catch(error => console.error('Erro ao salvar programação:', error));
+    
+    fecharModalProgramacao();
+  }
+
+  async function carregarDados() {
+      try {
+          const response = await fetch('/api/registros');
+          const data = await response.json();
+          registros = data.map(reg => ({
+              id: reg.id,
+              data: reg.data,
+              codigo: reg.codigo,
+              op: reg.op,
+              descricao: reg.descricao,
+              quant: reg.quant,
+              peso: reg.peso,
+              material: reg.material,
+              cliente: reg.cliente,
+              observacoes: reg.observacoes,
+              situacao: reg.situacao,
+              dataFinalizacao: reg.data_finalizacao,
+              prioridade: reg.prioridade || 'baixa',
+              tipo: reg.tipo || 'interno'
+          }));
+          atualizarTabela();
+          atualizarTabelaFinalizados();
+      } catch (error) {
+          console.error('Erro ao carregar dados:', error);
+      }
+  }
+
+  async function adicionarLinha() {
+    const dataInput = document.getElementById("data").value;
+    if (!dataInput) {
+        alert("Por favor, informe a data");
+        return;
+    }
+
+    const novo = {
+        data: dataInput,
+        codigo: document.getElementById("codigo").value.toLowerCase(),
+        op: document.getElementById("op").value.toLowerCase(),
+        descricao: document.getElementById("descricao").value.toLowerCase(),
+        quant: document.getElementById("quant").value,
+        peso: tipoAcabamentoAtual === 'terceiro' ? document.getElementById("peso").value : null,
+        material: document.getElementById("material").value.toLowerCase(),
+        cliente: document.getElementById("cliente").value.toLowerCase(),
+        terceiro: tipoAcabamentoAtual === 'terceiro' ? document.getElementById("terceiro").value.toLowerCase() : null,
+        observacoes: "",
+        situacao: "a definir",
+        dataFinalizacao: "",
+        prioridade: "baixa",
+        tipo: tipoAcabamentoAtual
+    };
+
+    try {
+        const response = await fetch('/api/registros', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(novo)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            novo.id = result.id;
+            registros.push(novo);
+            ['data','codigo','op','descricao','quant','peso','material','cliente','terceiro'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = '';
+            });
+            atualizarTabela();
+            atualizarTabelaFinalizados();
+            if (tipoAcabamentoAtual === 'terceiro') {
+              atualizarGraficoBarras();
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao adicionar registro:', error);
+    }
+}
+
+  async function alterarSituacao(id, novoValor) {
+      try {
+          const response = await fetch('/api/update', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  id: id,
+                  updates: {
+                      situacao: novoValor,
+                      ...(novoValor === "finalizada" ? { data_finalizacao: new Date().toISOString().split('T')[0] } : {})
+                  }
+              })
+          });
+          
+          const result = await response.json();
+          if (result.success) {
+              const registro = registros.find(r => r.id === id);
+              if (registro) {
+                  registro.situacao = novoValor;
+                  if (novoValor === "finalizada") {
+                      registro.dataFinalizacao = new Date().toISOString().split('T')[0];
+                  }
+                  atualizarTabela();
+                  atualizarTabelaFinalizados();
+                  if (tipoAcabamentoAtual === 'terceiro') {
+                    atualizarGraficoBarras();
+                  }
+              }
+          }
+      } catch (error) {
+          console.error('Erro ao atualizar registro:', error);
+      }
+  }
+
+  async function atualizarPrioridade(id, novaPrioridade) {
+      try {
+          const response = await fetch('/api/update', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: id, updates: { prioridade: novaPrioridade } })
+          });
+          
+          const result = await response.json();
+          if (result.success) {
+              const registro = registros.find(r => r.id === id);
+              if (registro) {
+                  registro.prioridade = novaPrioridade;
+                  atualizarTabela();
+              }
+          }
+      } catch (error) {
+          console.error('Erro ao atualizar prioridade:', error);
+      }
+  }
+
+  async function atualizarObservacao(id, novaObservacao) {
+      try {
+          const response = await fetch('/api/update', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: id, updates: { observacoes: novaObservacao } })
+          });
+          
+          const result = await response.json();
+          if (result.success) {
+              const registro = registros.find(r => r.id === id);
+              if (registro) {
+                  registro.observacoes = novaObservacao;
+              }
+          }
+      } catch (error) {
+          console.error('Erro ao atualizar observação:', error);
+      }
+  }
+
+  async function excluirRegistro(id) {
+      try {
+          const response = await fetch('/api/delete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: id })
+          });
+          
+          const result = await response.json();
+          if (result.success) {
+              registros = registros.filter(r => r.id !== id);
+              atualizarTabela();
+              atualizarTabelaFinalizados();
+              if (tipoAcabamentoAtual === 'terceiro') {
+                atualizarGraficoBarras();
+              }
+          }
+          return result.success;
+      } catch (error) {
+          console.error('Erro ao excluir registro:', error);
+          return false;
+      }
+  }
+
+  function abrirModalSenhaExclusao(id) {
+    indiceParaExcluir = id;
+    document.getElementById('modalSenhaExclusao').style.display = 'flex';
+  }
+
+  async function confirmarExclusao() {
+      const success = await excluirRegistro(indiceParaExcluir);
+      if (success) {
+          document.getElementById('modalSenhaExclusao').style.display = 'none';
+      }
+  }
+
+  function cancelarExclusao() {
+    document.getElementById('modalSenhaExclusao').style.display = 'none';
+    indiceParaExcluir = null;
+  }
+
+  function atualizarGraficoSituacao(contar) {
+    const total = Object.values(contar).reduce((acc, val) => acc + val, 0);
+    const labels = ["A definir", "Rebarbando", "Tratamento"];
+    const dados = labels.map(label => contar[label.toLowerCase()]);
+    const cores = ["#999999", "#ffc107", "#17a2b8"];
+    const ctx = document.getElementById('graficoSituacao').getContext('2d');
+
+    if (grafico) {
+      grafico.destroy();
+    }
+
+    grafico = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: dados,
+          backgroundColor: cores,
+          borderWidth: filtroAtivo ? 3 : 1,
+          borderColor: '#ffffff',
+          hoverBorderWidth: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              font: { family: 'Courier New', size: 12 },
+              padding: 20
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.raw || 0;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                return `${label}: ${value} (${percentage}%)`;
+              }
+            },
+            bodyFont: { family: 'Courier New', size: 12 }
+          }
+        },
+        onClick: (evt, elements) => {
+          if (elements.length > 0) {
+            const index = elements[0].index;
+            const situacao = labels[index].toLowerCase();
+            if (filtroAtivo === situacao) {
+              limparFiltroGrafico();
+            } else {
+              aplicarFiltroGrafico(situacao);
+            }
+          }
+        }
+      }
+    });
+    atualizarIndicadorFiltro();
+  }
+
+  function aplicarFiltroGrafico(situacao) {
+    filtroAtivo = situacao;
+    document.getElementById('filtroSituacao').value = situacao;
+    atualizarTabela();
+    atualizarIndicadorFiltro();
+  }
+
+  function limparFiltroGrafico() {
+    filtroAtivo = null;
+    document.getElementById('filtroSituacao').value = '';
+    atualizarTabela();
+    atualizarIndicadorFiltro();
+  }
+
+  function atualizarIndicadorFiltro() {
+    const indicador = document.getElementById('filtro-ativo-indicador');
+    if (filtroAtivo) {
+      indicador.textContent = `(Filtrado: ${filtroAtivo.toUpperCase()})`;
+      indicador.className = 'filtro-ativo';
+    } else {
+      indicador.textContent = '';
+      indicador.className = '';
+    }
+  }
+
+  function getPrioridadeClass(prioridade) {
+    switch(prioridade) {
+      case 'baixa': return 'prioridade-baixa';
+      case 'media': return 'prioridade-media';
+      case 'alta': return 'prioridade-alta';
+      case 'urgente': return 'prioridade-urgente';
+      default: return 'prioridade-media';
+    }
+  }
+
+  function getPrioridadeText(prioridade) {
+    switch(prioridade) {
+      case 'baixa': return 'BAIXA';
+      case 'media': return 'MÉDIA';
+      case 'alta': return 'ALTA';
+      case 'urgente': return 'URGENTE';
+      default: return 'MÉDIA';
+    }
+  }
+
+  function atualizarTabela() {
+    const tbody = document.querySelector("#tabela tbody");
+    tbody.innerHTML = "";
+    const filtroCodigo = document.getElementById("filtroCodigo").value.toLowerCase();
+    const filtroOP = document.getElementById("filtroOP").value.toLowerCase();
+    const filtroDescricao = document.getElementById("filtroDescricao").value.toLowerCase();
+    const filtroMaterial = document.getElementById("filtroMaterial").value.toLowerCase();
+    const filtroCliente = document.getElementById("filtroCliente").value.toLowerCase();
+    const filtroTerceiro = document.getElementById("filtroTerceiro").value.toLowerCase();
+    const filtroPrioridade = document.getElementById("filtroPrioridade").value;
+    const filtroSituacao = document.getElementById("filtroSituacao").value.toLowerCase();
+
+    const registrosOrdenados = [...registros].sort((a, b) => {
+        const ordemPrioridade = { 'urgente': 0, 'alta': 1, 'media': 2, 'baixa': 3 };
+        const prioridadeA = ordemPrioridade[a.prioridade.toLowerCase()] || 2;
+        const prioridadeB = ordemPrioridade[b.prioridade.toLowerCase()] || 2;
+        if (prioridadeA !== prioridadeB) {
+            return prioridadeA - prioridadeB;
+        }
+        return new Date(b.data) - new Date(a.data);
+    });
+
+    const filtrados = registrosOrdenados.filter(reg =>
+        reg.tipo === tabelaAtual &&
+        (!filtroCodigo || reg.codigo.includes(filtroCodigo)) &&
+        (!filtroOP || reg.op.includes(filtroOP)) &&
+        (!filtroDescricao || reg.descricao.includes(filtroDescricao)) &&
+        (!filtroMaterial || reg.material.includes(filtroMaterial)) &&
+        (!filtroCliente || reg.cliente.includes(filtroCliente)) &&
+        (!filtroTerceiro || (reg.terceiro && reg.terceiro.includes(filtroTerceiro))) &&
+        (!filtroPrioridade || reg.prioridade === filtroPrioridade) &&
+        (!filtroSituacao || reg.situacao === filtroSituacao) &&
+        reg.situacao !== "finalizada"
+    );
+
+    filtrados.forEach(reg => {
+        const linha = document.createElement("tr");
+        if (reg.situacao === "finalizada") linha.style.backgroundColor = "#d4edda";
+        
+        linha.innerHTML = `
+            <td><a href="#" onclick="mostrarDetalhesRegistro(${reg.id}); return false;">${reg.codigo}</a></td>
+            <td>${reg.op}</td>
+            <td>${reg.descricao}</td>
+            <td>${reg.quant}</td>
+            <td>${reg.material}</td>
+            <td>${reg.cliente}</td>
+            <td>${reg.terceiro || '-'}</td>
+            <td>
+              <select onchange="atualizarPrioridade(${reg.id}, this.value)" class="prioridade ${getPrioridadeClass(reg.prioridade)}">
+                <option value="baixa" ${reg.prioridade === "baixa" ? "selected" : ""}>BAIXA</option>
+                <option value="media" ${reg.prioridade === "media" ? "selected" : ""}>MÉDIA</option>
+                <option value="alta" ${reg.prioridade === "alta" ? "selected" : ""}>ALTA</option>
+                <option value="urgente" ${reg.prioridade === "urgente" ? "selected" : ""}>URGENTE</option>
+              </select>
+            </td>
+            <td><input type="text" value="${reg.observacoes || ''}" 
+                onchange="atualizarObservacao(${reg.id}, this.value)" 
+                style="width: 100%; border: 1px solid #ccc; padding: 2px;"></td>
+            <td><select onchange="alterarSituacao(${reg.id}, this.value)">
+                <option value="a definir" ${reg.situacao === "a definir" ? "selected" : ""}>A definir</option>
+                <option value="rebarbando" ${reg.situacao === "rebarbando" ? "selected" : ""}>Rebarbando</option>
+                <option value="tratamento" ${reg.situacao === "tratamento" ? "selected" : ""}>Tratamento</option>
+                <option value="finalizada" ${reg.situacao === "finalizada" ? "selected" : ""}>Finalizada</option>
+            </select></td>
+            <td>
+                <div class="botoes-acao">
+                    <button class="excluir-btn" onclick="abrirModalSenhaExclusao(${reg.id})">X</button>
+                    <button class="visualizar-btn" onclick="visualizarArquivo('${reg.codigo}')">PDF</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(linha);
+    });
+    atualizarContagemSituacoes();
+}
+
+function getItensVisiveis() {
+  const filtro = document.getElementById('filtro-programacao').value.toLowerCase();
+  const filtroSituacao = document.getElementById('filtro-situacao-programacao').value;
+  const filtroPrioridade = document.getElementById('filtro-prioridade-programacao').value;
+  
+  return registros.filter(reg => 
+    reg.tipo === tabelaAtual && 
+    reg.situacao !== 'finalizada' &&
+    (!filtro || reg.codigo.toLowerCase().includes(filtro) || reg.op.toLowerCase().includes(filtro)) &&
+    (!filtroSituacao || reg.situacao === filtroSituacao) &&
+    (!filtroPrioridade || reg.prioridade === filtroPrioridade)
+  );
+}
+
+function toggleSelecionarTodos(selecionar) {
+  const itensVisiveis = getItensVisiveis();
+  if (selecionar) {
+    itensVisiveis.forEach(item => {
+      if (!itensSelecionadosProgramacao.some(i => i.id === item.id)) {
+        itensSelecionadosProgramacao.push(item);
+      }
+    });
+  } else {
+    const idsVisiveis = itensVisiveis.map(item => item.id);
+    itensSelecionadosProgramacao = itensSelecionadosProgramacao.filter(
+      item => !idsVisiveis.includes(item.id)
+    );
+  }
+  atualizarListaProgramacao();
+  atualizarSelecionadosProgramacao();
+}
+
+function verificarTodosSelecionados() {
+  const itensVisiveis = getItensVisiveis();
+  if (itensVisiveis.length === 0) return false;
+  
+  return itensVisiveis.every(itemVisivel => 
+    itensSelecionadosProgramacao.some(itemSelecionado => itemSelecionado.id === itemVisivel.id)
+  );
+}
+
+function atualizarListaProgramacao() {
+  const itensVisiveis = getItensVisiveis();
+  const lista = document.getElementById('lista-programacao');
+  lista.innerHTML = '';
+  document.getElementById('marcar-todos').checked = verificarTodosSelecionados();
+  
+  if (itensVisiveis.length === 0) {
+    lista.innerHTML = '<div class="empty-state">Nenhum item encontrado</div>';
+    document.getElementById('contagem-disponiveis').textContent = '0';
+    return;
+  }
+
+  const itensAgrupados = {};
+  itensVisiveis.forEach(reg => {
+    if (!itensAgrupados[reg.codigo]) {
+      itensAgrupados[reg.codigo] = [];
+    }
+    itensAgrupados[reg.codigo].push(reg);
+  });
+
+  const codigosOrdenados = Object.keys(itensAgrupados).sort();
+
+  codigosOrdenados.forEach(codigo => {
+    itensAgrupados[codigo].forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'programacao-item';
+      div.innerHTML = `
+        <input type="checkbox" id="item-${item.id}" 
+          onchange="toggleItemProgramacao(${item.id}, this.checked)"
+          ${itensSelecionadosProgramacao.some(i => i.id === item.id) ? 'checked' : ''}>
+        <div class="programacao-item-info">
+          <div class="programacao-item-codigo">${item.codigo.toUpperCase()} - OP: ${item.op.toUpperCase()}</div>
+          <div class="programacao-item-descricao">${item.descricao.toUpperCase()}</div>
+          <div>Quant: ${item.quant} • ${item.material.toUpperCase()}</div>
+          <div>Situação: ${item.situacao.toUpperCase()} • Prioridade: ${getPrioridadeText(item.prioridade)}</div>
+        </div>
+      `;
+      lista.appendChild(div);
+    });
+  });
+  document.getElementById('contagem-disponiveis').textContent = itensVisiveis.length;
+}
+
+function mostrarDetalhesRegistro(id) {
+    const registro = registros.find(r => r.id === id);
+    if (!registro) return;
+
+    const detalhes = `
+        <div style="padding: 15px; max-width: 500px;">
+            <h3 style="margin-top: 0; color: #003366;">Detalhes do Registro</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee; font-weight: bold; width: 120px;">Código:</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee;">${registro.codigo.toUpperCase()}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee; font-weight: bold;">OP:</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee;">${registro.op.toUpperCase()}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee; font-weight: bold;">Descrição:</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee;">${registro.descricao.toUpperCase()}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee; font-weight: bold;">Quantidade:</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee;">${registro.quant}</td>
+                </tr>
+                ${registro.tipo === 'terceiro' ? `
+                <tr>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee; font-weight: bold;">Peso Unitário:</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee;">${registro.peso || '-'} kg</td>
+                </tr>
+                ` : ''}
+                <tr>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee; font-weight: bold;">Material:</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee;">${registro.material.toUpperCase()}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee; font-weight: bold;">Cliente:</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee;">${registro.cliente.toUpperCase()}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee; font-weight: bold;">Data:</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee;">${formatarData(new Date(registro.data))}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee; font-weight: bold;">Situação:</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee;">${registro.situacao.toUpperCase()}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee; font-weight: bold;">Prioridade:</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee;">${getPrioridadeText(registro.prioridade)}</td>
+                </tr>
+                ${registro.observacoes ? `
+                <tr>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee; font-weight: bold;">Observações:</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee;">${registro.observacoes}</td>
+                </tr>
+                ` : ''}
+                ${registro.dataFinalizacao ? `
+                <tr>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee; font-weight: bold;">Data Finalização:</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #eee;">${formatarData(new Date(registro.dataFinalizacao))}</td>
+                </tr>
+                ` : ''}
+            </table>
+            <div style="margin-top: 15px; text-align: right;">
+                <button onclick="fecharModalDetalhes()" 
+                    style="padding: 5px 15px; background: #003366; color: white; border: none; cursor: pointer;">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    `;
+    const modal = document.createElement('div');
+    modal.id = 'modal-detalhes';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.5); display: flex; justify-content: center;
+        align-items: center; z-index: 1000;
+    `;
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content';
+    modalContent.style.cssText = `
+        background-color: white; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    `;
+    modalContent.innerHTML = detalhes;
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            fecharModalDetalhes();
+        }
+    });
+}
+
+function fecharModalDetalhes() {
+    const modal = document.getElementById('modal-detalhes');
+    if (modal) {
+        document.body.removeChild(modal);
+    }
+}
+  
+  function atualizarTabelaFinalizados() {
+    const tbody = document.querySelector("#tabela-finalizados-content tbody");
+    tbody.innerHTML = "";
+    
+    const filtroData = document.getElementById("filtroDataFinalizados").value;
+    const filtroCodigo = document.getElementById("filtroCodigoFinalizados").value.toLowerCase();
+    const filtroOP = document.getElementById("filtroOPFinalizados").value.toLowerCase();
+    const filtroDescricao = document.getElementById("filtroDescricaoFinalizados").value.toLowerCase();
+    const filtroMaterial = document.getElementById("filtroMaterialFinalizados").value.toLowerCase();
+    const filtroCliente = document.getElementById("filtroClienteFinalizados").value.toLowerCase();
+    const filtroDataFinalizacao = document.getElementById("filtroDataFinalizacao").value;
+
+    const registrosOrdenados = [...registros].sort((a, b) => new Date(b.dataFinalizacao || 0) - new Date(a.dataFinalizacao || 0));
+
+    const filtrados = registrosOrdenados.filter(reg =>
+        reg.situacao === "finalizada" &&
+        reg.tipo === tabelaAtual &&
+        (!filtroData || reg.data === filtroData) &&
+        (!filtroCodigo || reg.codigo.includes(filtroCodigo)) &&
+        (!filtroOP || reg.op.includes(filtroOP)) &&
+        (!filtroDescricao || reg.descricao.includes(filtroDescricao)) &&
+        (!filtroMaterial || reg.material.includes(filtroMaterial)) &&
+        (!filtroCliente || reg.cliente.includes(filtroCliente)) &&
+        (!filtroDataFinalizacao || reg.dataFinalizacao === filtroDataFinalizacao)
+    );
+
+    filtrados.forEach(reg => {
+        const linha = document.createElement("tr");
+        linha.style.backgroundColor = "#d4edda";
+        linha.innerHTML = `
+            <td>${formatarData(new Date(reg.data))}</td>
+            <td>${reg.codigo}</td>
+            <td>${reg.op}</td>
+            <td>${reg.descricao}</td>
+            <td>${reg.quant}</td>
+            <td>${reg.material}</td>
+            <td>${reg.cliente}</td>
+            <td>${reg.dataFinalizacao || ''}</td>
+            <td>
+                <div class="botoes-acao">
+                    <button class="excluir-btn" onclick="abrirModalSenhaExclusao(${reg.id})">X</button>
+                    <button class="visualizar-btn" onclick="visualizarArquivo('${reg.codigo}')">PDF</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(linha);
+    });
+    toggleFloatingButtons();
+  }
+
+  function toggleFloatingButtons() {
+    const finalizados = registros.filter(reg => reg.situacao === "finalizada" && reg.tipo === tabelaAtual);
+    const btnFinalizados = document.getElementById('btn-finalizados');
+    if (finalizados.length > 0) {
+      btnFinalizados.style.display = 'flex';
+    } else {
+      btnFinalizados.style.display = 'none';
+    }
+  }
+
+  function scrollToFinalizados() {
+    document.getElementById('tabela-finalizados').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function scrollToTop() {
+    const conteudo = document.getElementById('conteudo');
+    if (conteudo && conteudo.scrollHeight > conteudo.clientHeight) {
+      conteudo.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    } else {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  }
+
+  document.getElementById('conteudo').addEventListener('scroll', function() {
+    const btnTopo = document.getElementById('btn-topo');
+    if (this.scrollTop > 300) {
+      btnTopo.style.display = 'flex';
+    } else {
+      btnTopo.style.display = 'none';
+    }
+  });
+
+  function atualizarContagemSituacoes() {
+    const contar = {
+      "a definir": 0,
+      "rebarbando": 0,
+      "tratamento": 0
+    };
+    const registrosFiltrados = registros.filter(reg => reg.tipo === tabelaAtual && reg.situacao !== "finalizada");
+    registrosFiltrados.forEach(reg => {
+      const sit = (reg.situacao || '').toLowerCase().trim();
+      if (contar.hasOwnProperty(sit)) contar[sit]++;
+    });
+    document.getElementById("contar-total").innerText = registrosFiltrados.length;
+    document.getElementById("contar-definir").innerText = contar["a definir"];
+    document.getElementById("contar-rebarbando").innerText = contar["rebarbando"];
+    document.getElementById("contar-tratamento").innerText = contar["tratamento"];
+    atualizarGraficoSituacao(contar);
+  }
+
+  function visualizarArquivo(codigo) {
+    const nomeArquivo = codigo.replace(/[^a-zA-Z0-9-_]/g, '');
+    const urlArquivo = `${nomeArquivo}.pdf`;
+    window.open(urlArquivo, '_blank').focus();
+    setTimeout(() => {
+        if (window.closed) {
+            alert(`Arquivo não encontrado: ${urlArquivo}`);
+        }
+    }, 500);
+  }
+
+  window.onload = function() {
+    document.getElementById('data').valueAsDate = new Date();
+    carregarDados();
+    toggleFloatingButtons();
+    setupTimeout();
+    document.getElementById('btn-programacao').addEventListener('click', abrirModalProgramacao);
+    document.getElementById('btn-interno').addEventListener('click', () => alternarTabela('interno'));
+    document.getElementById('btn-terceiro').addEventListener('click', () => alternarTabela('terceiro'));
+  };
+</script>
+
+</body>
+</html>

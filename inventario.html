@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Controle de Estoque - Fundição Erus</title>
+
+    <style>
+        :root {
+            --primary-blue: #2c3e50;
+            --secondary-blue: #3498db;
+            --accent-blue: #2980b9;
+            --dark-blue: #1a2530;
+            --light-gray: #ecf0f1;
+            --medium-gray: #bdc3c7;
+            --dark-gray: #7f8c8d;
+            --border-color: #95a5a6;
+            --success-color: #27ae60;
+            --warning-color: #e67e22;
+            --danger-color: #c0392b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; }
+        body { background: var(--light-gray); color: #333; padding: 15px; line-height: 1.4; font-size: 14px; display: flex; flex-direction: column; min-height: 100vh; }
+        .container { max-width: 1600px; margin: 0 auto; background: #fff; border-radius: 4px; box-shadow: 0 0 15px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid var(--border-color); flex: 1; display: flex; flex-direction: column; height: calc(100vh - 30px); }
+        header { background: var(--primary-blue); color: #fff; padding: 15px 20px; text-align: center; border-bottom: 3px solid var(--secondary-blue); flex-shrink: 0; position: relative; }
+        h1 { font-size: 18px; margin-bottom: 3px; letter-spacing: 0.5px; }
+        p.subtitle { margin-top: 4px; color: var(--light-gray); font-size: 12px; }
+        .header-button { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); }
+        
+        /* Indicadores */
+        .indicators-container { padding: 15px; background: var(--light-gray); border-bottom: 1px solid var(--border-color); flex-shrink: 0; display: flex; gap: 15px; flex-wrap: wrap; }
+        .indicator-card { flex: 1; min-width: 180px; background: white; border-radius: 4px; box-shadow: 0 0 10px rgba(0,0,0,0.05); padding: 15px; border: 1px solid var(--border-color); text-align: center; }
+        .indicator-title { font-size: 12px; color: var(--dark-blue); font-weight: bold; margin-bottom: 5px; }
+        .indicator-value { font-size: 18px; font-weight: 700; color: var(--primary-blue); }
+        
+        /* Estilos do formulário */
+        .form-container { padding: 15px; background: #f9f9f9; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: flex-end; }
+        .form-group { flex: 1; min-width: 150px; }
+        .form-group label { display: block; font-size: 12px; margin-bottom: 4px; font-weight: bold; color: var(--dark-blue); }
+        .form-group input, .form-group select { width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; background: white; font-family: 'Courier New', monospace; text-transform: uppercase; }
+        .form-buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 5px; }
+        
+        .controls { padding: 10px 15px; display: flex; gap: 8px; align-items: center; justify-content: space-between; background: var(--light-gray); flex-wrap: wrap; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+        .left-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        input[type="text"], input[type="date"], input[type="number"] { padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; background: white; font-family: 'Courier New', monospace; text-transform: uppercase; }
+        button { padding: 6px 10px; border: 1px solid var(--dark-blue); border-radius: 3px; cursor: pointer; background: var(--secondary-blue); color: #fff; transition: background .15s; font-size: 12px; font-weight: bold; }
+        button:hover { background: var(--accent-blue); }
+        .btn-save { background: var(--success-color); border-color: #1e8449; }
+        .btn-save:hover { background: #229954; }
+        .btn-add { background: var(--warning-color); border-color: #bf6516; }
+        .btn-add:hover { background: #d35400; }
+        .btn-danger { background: var(--danger-color); border-color: #922b21; }
+        .btn-danger:hover { background: #a93226; }
+        .btn-edit { background: var(--warning-color); border-color: #bf6516; }
+        .btn-edit:hover { background: #d35400; }
+        .btn-default { background: var(--dark-gray); border-color: #6c7a81; }
+        .btn-default:hover { background: #6c7a81; }
+        .btn-import { 
+            display: inline-block; 
+            padding: 6px 10px; 
+            border: 1px solid var(--dark-blue); 
+            border-radius: 3px; 
+            cursor: pointer; 
+            background: var(--secondary-blue); 
+            color: #fff; 
+            transition: background .15s; 
+            font-size: 12px; 
+            font-weight: bold; 
+            text-align: center;
+        }
+        .btn-import:hover { background: var(--accent-blue); }
+
+        .table-container { overflow: auto; flex: 1; min-height: 300px; }
+        table { width: 100%; border-collapse: collapse; min-width: 100px; font-size: 12px; }
+        th, td { padding: 8px 10px; border-bottom: 1px solid var(--border-color); text-align: left; text-transform: uppercase; }
+        thead tr.header-row th { background: var(--dark-blue); color: white; position: sticky; top: 0; z-index: 20; font-weight: 600; font-size: 12px; padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        thead tr.filter-row th { background: var(--medium-gray); padding: 6px; position: sticky; top: 40px; z-index: 15; }
+        thead tr.filter-row input { width: 100%; padding: 4px 6px; box-sizing: border-box; border-radius: 2px; border: 1px solid var(--border-color); font-size: 11px; text-transform: uppercase; }
+        tr:nth-child(even) td { background: #f8f9f9; }
+        tr:hover td { background: #eaf2f8; }
+        td.editable { min-width: 70px; border-right: 1px dotted var(--medium-gray); }
+        td.editable:focus { outline: 2px solid var(--secondary-blue); background: #fff; }
+        .center { text-align: center; }
+        .checkbox-cell { width: 70px; }
+        .delete-cell { width: 30px; }
+        .delete-btn { color: var(--danger-color); cursor: pointer; font-weight: bold; text-align: center; }
+        .delete-btn:hover { color: #ff0000; }
+        .footer { padding: 10px 15px; background: var(--primary-blue); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; border-top: 3px solid var(--secondary-blue); color: white; flex-shrink: 0; }
+        .status { font-size: 12px; color: #fff; font-weight: bold; }
+        .panel-totals { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .panel-card { background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.2); padding: 6px 10px; border-radius: 3px; min-width: 140px; text-align: center; box-shadow: 0 2px 3px rgba(0,0,0,0.1); color: white; }
+        .panel-card .label { font-size: 11px; color: var(--light-gray); font-weight: bold; }
+        .panel-card .value { font-size: 14px; font-weight: 700; margin-top: 4px; color: #fff; }
+        
+        .scroll-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--secondary-blue);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s ease;
+        }
+        .scroll-btn:hover {
+            background: var(--accent-blue);
+            transform: translateY(-3px);
+        }
+        
+        @media (max-width: 900px) { 
+            body{padding:10px;font-size:13px} 
+            .container{border-radius:3px;height:calc(100vh - 20px)} 
+            .indicators-container { flex-direction: column; padding: 15px 10px; }
+            .indicator-card { min-width: 100%; }
+            .form-container{padding:10px} 
+            .controls{padding:8px 10px} 
+            .table-container{min-height: 250px;}
+            thead tr.filter-row th{top:39px} 
+            .footer{padding:8px 10px} 
+            .panel-card{min-width:120px;padding:5px 8px} 
+            .panel-card .value{font-size:13px} 
+            .scroll-btn {
+                bottom: 20px;
+                right: 20px;
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+        }
+        @media (max-width: 600px) { 
+            body{padding:5px} 
+            .container{height:calc(100vh - 10px)} 
+            .table-container{min-height: 200px;}
+            thead tr.filter-row th{top:39px} 
+            .left-controls,.controls{gap:4px} 
+            button{padding:5px 8px;font-size:11px} 
+            input[type="text"]{max-width:120px} 
+            .panel-totals{gap:5px} 
+            .panel-card{min-width:100px;padding:4px 6px} 
+            .panel-card .label{font-size:10px} 
+            .panel-card .value{font-size:12px} 
+            .scroll-btn {
+                bottom: 15px;
+                right: 15px;
+                width: 35px;
+                height: 35px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>CONTROLE DE ESTOQUE - FUNDIÇÃO ERUS</h1>
+        <p class="subtitle">Tabela de inventário de produtos</p>
+        <div class="header-button">
+            <button onclick="window.location.href='dashboard.html'">Sistema</button>
+        </div>
+    </header>
+    
+    <div class="indicators-container">
+        <div class="indicator-card">
+            <div class="indicator-title">QUANTIDADE TOTAL EM ESTOQUE</div>
+            <div id="indicatorQuantity" class="indicator-value">0</div>
+        </div>
+        <div class="indicator-card">
+            <div class="indicator-title">PESO TOTAL EM ESTOQUE (kg)</div>
+            <div id="indicatorWeight" class="indicator-value">0,00</div>
+        </div>
+    </div>
+
+    <div class="form-container">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="inputCodigo">CÓDIGO</label>
+                <input type="text" id="inputCodigo" placeholder="Código do produto">
+            </div>
+            <div class="form-group">
+                <label for="inputDescricao">DESCRIÇÃO</label>
+                <input type="text" id="inputDescricao" placeholder="Descrição do produto">
+            </div>
+            <div class="form-group">
+                <label for="inputMaterial">MATERIAL</label>
+                <input type="text" id="inputMaterial" placeholder="Material">
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="inputQuantidade">QUANTIDADE</label>
+                <input type="number" id="inputQuantidade" placeholder="0" min="1" step="1">
+            </div>
+            <div class="form-group">
+                <label for="inputPesoUn">PESO (UN) kg</label>
+                <input type="number" id="inputPesoUn" placeholder="0.00" min="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="inputUltFaturamento">ÚLTIMO FATURAMENTO</label>
+                <input type="date" id="inputUltFaturamento">
+            </div>
+            <div class="form-group">
+                <label for="inputCliente">CLIENTE</label>
+                <input type="text" id="inputCliente" placeholder="Nome do cliente">
+            </div>
+        </div>
+        
+        <div class="form-buttons">
+            <button class="btn-add" onclick="adicionarItem()">Adicionar Item</button>
+            <button class="btn-danger" onclick="limparFormulario()">Limpar</button>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="left-controls">
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="inventoryTable" role="table" aria-label="Tabela de inventário">
+            <thead>
+                <tr class="header-row">
+                    <th class="delete-cell"></th>
+                    <th>CÓDIGO</th>
+                    <th>DESCRIÇÃO</th>
+                    <th>QUANTIDADE</th>
+                    <th>PESO (UN)</th>
+                    <th>PESO TOTAL</th>
+                    <th>MATERIAL</th>
+                    <th>ÚLT. FATURAMENTO</th>
+                    <th>CLIENTE</th>
+                </tr>
+                <tr class="filter-row">
+                    <th></th>
+                    <th><input data-col="1" placeholder="Filtrar"/></th>
+                    <th><input data-col="2" placeholder="Filtrar"/></th>
+                    <th><input data-col="3" placeholder="Filtrar"/></th>
+                    <th><input data-col="4" placeholder="Filtrar"/></th>
+                    <th><input data-col="5" placeholder="Filtrar"/></th>
+                    <th><input data-col="6" placeholder="Filtrar"/></th>
+                    <th><input data-col="7" placeholder="Filtrar"/></th>
+                    <th><input data-col="8" placeholder="Filtrar"/></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <div class="status">Total de itens: <strong id="totalRows">0</strong></div>
+        <div class="panel-totals">
+            <div class="panel-card">
+                <div class="label">Quantidade Total</div>
+                <div id="totalQuantity" class="value">0</div>
+            </div>
+            <div class="panel-card">
+                <div class="label">Peso Total (kg)</div>
+                <div id="totalWeight" class="value">0,00</div>
+            </div>
+        </div>
+        <div>
+            <button onclick="exportCSV()" title="Exportar CSV">Exportar CSV</button>
+            <label for="csvFileInput" class="btn-import">Importar CSV</label>
+            <input type="file" id="csvFileInput" accept=".csv" style="display:none;">
+            <button onclick="limparTodosDados()" title="Limpar todos os dados" class="btn-danger">Limpar Dados</button>
+        </div>
+    </div>
+</div>
+
+<button class="scroll-btn" id="scrollBtn" title="Ir para a tabela">↓</button>
+
+<script>
+    let registros = [];
+    let scrollBtn = document.getElementById('scrollBtn');
+
+    // --- Funções de API, DOM e Utilitários ---
+    async function apiRequest(endpoint, method = 'GET', data = null) {
+        const options = {
+            method: method,
+            headers: { 'Content-Type': 'application/json' }
+        };
+        if (data && (method === 'POST' || method === 'PUT')) {
+            options.body = JSON.stringify(data);
+        }
+        try {
+            const response = await fetch(`/api/${endpoint}`, options);
+            if (!response.ok) throw new Error(`Erro na requisição: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error('Erro na comunicação com o servidor:', error);
+            alert('Erro na comunicação com o servidor. Verifique se o servidor está rodando.');
+            throw error;
+        }
+    }
+    
+    function formatNumber(value){
+        if (value === null || value === undefined || isNaN(value)) return '0,00';
+        return Number(value).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+    
+    function parseNumberSafe(text){
+        if (text === null || text === undefined) return 0;
+        let s = String(text).trim().replace(',', '.');
+        const num = parseFloat(s);
+        return isNaN(num) ? 0 : num;
+    }
+    
+    function limparFormulario() {
+        ['inputCodigo', 'inputDescricao', 'inputQuantidade', 'inputPesoUn', 'inputMaterial', 'inputUltFaturamento', 'inputCliente'].forEach(id => document.getElementById(id).value = '');
+    }
+
+    async function adicionarItem() {
+        const codigo = document.getElementById('inputCodigo').value.toUpperCase();
+        const descricao = document.getElementById('inputDescricao').value.toUpperCase();
+        const quantidade = document.getElementById('inputQuantidade').value;
+        const pesoUn = document.getElementById('inputPesoUn').value;
+        const material = document.getElementById('inputMaterial').value.toUpperCase();
+        const ultFaturamento = document.getElementById('inputUltFaturamento').value;
+        const cliente = document.getElementById('inputCliente').value.toUpperCase();
+        
+        if (!codigo || !quantidade || !pesoUn) {
+            alert('Por favor, preencha os campos obrigatórios: Código, Quantidade e Peso (Un.).');
+            return;
+        }
+
+        try {
+            const item = {
+                codigo,
+                descricao,
+                quant: parseInt(quantidade),
+                peso: parseNumberSafe(pesoUn),
+                material,
+                ultFaturamento,
+                cliente,
+                tipo: "estoque"
+            };
+            const response = await apiRequest('inventario-add', 'POST', item);
+            if (response.success) {
+                item.id = response.id;
+                item.peso_total = item.peso * item.quant;
+                registros.push(item);
+                updateUI(registros);
+                limparFormulario();
+                alert('Item adicionado ao estoque com sucesso!');
+            } else {
+                alert('Erro ao adicionar item: ' + (response.error || 'Erro desconhecido'));
+            }
+        } catch (error) {
+            console.error('Erro ao adicionar item:', error);
+        }
+    }
+
+    async function salvarAlteracoes(id, campo, novoValor) {
+        try {
+            const registro = registros.find(r => r.id === id);
+            if (!registro) return;
+            const updates = { [campo]: novoValor };
+            const response = await apiRequest('inventario-update', 'POST', { id, updates });
+            if (response.success) {
+                Object.assign(registro, updates);
+                updateUI(registros);
+            } else {
+                alert('Erro ao salvar: ' + (response.error || ''));
+                updateUI(registros);
+            }
+        } catch (error) {
+            console.error('Erro ao salvar:', error);
+        }
+    }
+
+    async function excluirRegistro(id, trElement) {
+        if (!confirm('Deseja excluir este item do inventário?')) return;
+        try {
+            const response = await apiRequest('inventario-delete', 'POST', { id });
+            if (response.success) {
+                registros = registros.filter(r => r.id !== id);
+                trElement.remove();
+                updateUI(registros);
+                alert('Item excluído!');
+            } else {
+                alert('Erro ao excluir: ' + (response.error || ''));
+            }
+        } catch (error) {
+            console.error('Erro ao excluir:', error);
+        }
+    }
+
+    function updateUI(dataToProcess) {
+        updateTable(dataToProcess);
+        updateCounters(dataToProcess);
+        applyColumnFilters();
+    }
+    
+    function updateTable(dataToProcess){
+        const tbody = document.querySelector('#inventoryTable tbody');
+        tbody.innerHTML = '';
+        dataToProcess.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.dataset.id = String(item.id);
+            const pesoTotal = item.peso_total || (item.peso * item.quant);
+            const ultFaturamentoFormatado = item.ultFaturamento ? new Date(item.ultFaturamento + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+
+            tr.innerHTML = `<td class="delete-cell center"><span class="delete-btn" title="Excluir">X</span></td><td>${item.codigo}</td><td>${item.descricao}</td><td style="text-align: right;">${item.quant}</td><td style="text-align: right;">${formatNumber(item.peso)}</td><td style="text-align: right;">${formatNumber(pesoTotal)}</td><td>${item.material}</td><td>${ultFaturamentoFormatado}</td><td>${item.cliente}</td>`;
+            tr.querySelector('.delete-btn').onclick = () => excluirRegistro(item.id, tr);
+            tbody.appendChild(tr);
+        });
+    }
+
+    function updateCounters(dataToProcess){
+        let totalQty = dataToProcess.reduce((sum, r) => sum + (r.quant || 0), 0);
+        let totalWeight = dataToProcess.reduce((sum, r) => sum + (r.peso_total || (r.peso * r.quant)), 0);
+        document.getElementById('totalRows').textContent = dataToProcess.length;
+        document.getElementById('totalQuantity').textContent = Number(totalQty).toLocaleString('pt-BR');
+        document.getElementById('totalWeight').textContent = formatNumber(totalWeight);
+        document.getElementById('indicatorQuantity').textContent = Number(totalQty).toLocaleString('pt-BR');
+        document.getElementById('indicatorWeight').textContent = formatNumber(totalWeight);
+    }
+    
+    function applyColumnFilters() {
+        const inputs = document.querySelectorAll('thead .filter-row input');
+        const filters = Array.from(inputs).map(i => ({ col: i.dataset.col, val: i.value.trim().toUpperCase() }));
+        document.querySelectorAll('#inventoryTable tbody tr').forEach(row => {
+            let visible = true;
+            for (const filter of filters) {
+                if (!filter.val) continue;
+                const cell = row.cells[filter.col];
+                if (!cell || !cell.textContent.toUpperCase().includes(filter.val)) {
+                    visible = false;
+                    break;
+                }
+            }
+            row.style.display = visible ? '' : 'none';
+        });
+    }
+
+    function exportCSV(){
+        const h = ['CÓDIGO','DESCRIÇÃO','QUANTIDADE','PESO (UN)','PESO TOTAL','MATERIAL','ÚLT. FATURAMENTO','CLIENTE'].join(';');
+        const r = Array.from(document.querySelectorAll('#inventoryTable tbody tr:not([style*="none"])')).map(row => {
+            const reg = registros.find(r => String(r.id) === row.dataset.id);
+            if (!reg) return '';
+            const pT = reg.peso_total || reg.peso * reg.quant;
+            const ultFaturamentoFormatado = reg.ultFaturamento ? new Date(reg.ultFaturamento + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+            return [`"${reg.codigo}"`, `"${reg.descricao}"`, reg.quant, String(reg.peso).replace('.',','), String(pT).replace('.',','), `"${reg.material}"`, ultFaturamentoFormatado, `"${reg.cliente}"`].join(';');
+        });
+        const csv = [h, ...r].join('\n');
+        const blob = new Blob(["\uFEFF" + csv], {type: 'text/csv;charset=utf-8;'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'controle_estoque.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    async function importCSV(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!file.name.endsWith('.csv')) {
+            alert('Por favor, selecione um arquivo CSV.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async function (e) {
+            const text = e.target.result;
+            const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            
+            if (lines.length <= 1) {
+                alert('O arquivo CSV está vazio ou não contém dados.');
+                return;
+            }
+
+            const headers = lines[0].split(';').map(h => h.trim().replace(/"/g, ''));
+            const expectedHeaders = ["CÓDIGO", "DESCRIÇÃO", "QUANTIDADE", "PESO (UN)", "PESO TOTAL", "MATERIAL", "ÚLT. FATURAMENTO", "CLIENTE"];
+            
+            if (!expectedHeaders.every(header => headers.includes(header))) {
+                 alert('O arquivo CSV não possui as colunas esperadas. Verifique o cabeçalho.');
+                 return;
+            }
+            
+            const dataRows = lines.slice(1);
+            let importCount = 0;
+            let errorCount = 0;
+            const existingRecords = await apiRequest('inventario');
+
+            for (const line of dataRows) {
+                const values = line.split(';').map(v => v.replace(/"/g, ''));
+                const record = {
+                    codigo: values[0],
+                    descricao: values[1],
+                    quant: parseInt(values[2]),
+                    peso: parseNumberSafe(values[3]),
+                    material: values[5],
+                    ultFaturamento: values[6] ? values[6].split('/').reverse().join('-') : '',
+                    cliente: values[7],
+                    tipo: "estoque"
+                };
+                
+                if (!record.codigo || isNaN(record.quant) || isNaN(record.peso)) {
+                    console.error('Dados inválidos na linha:', record);
+                    errorCount++;
+                    continue;
+                }
+                
+                try {
+                    const existingItem = existingRecords.find(item => item.codigo === record.codigo);
+                    if (existingItem) {
+                        // Atualizar a quantidade se o item já existe
+                        const newQuant = existingItem.quant + record.quant;
+                        await apiRequest('inventario-update', 'POST', { id: existingItem.id, updates: { quant: newQuant } });
+                    } else {
+                        // Adicionar novo item
+                        await apiRequest('inventario-add', 'POST', record);
+                    }
+                    importCount++;
+                } catch (err) {
+                    errorCount++;
+                    console.error('Erro de API ao importar:', err);
+                }
+            }
+
+            alert(`Importação concluída: ${importCount} registros processados. ${errorCount} com erros.`);
+            document.getElementById('csvFileInput').value = '';
+            carregarDados();
+        };
+
+        reader.onerror = function () {
+            alert('Erro ao ler o arquivo.');
+        };
+
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    async function carregarDados() {
+        try {
+            registros = await apiRequest('inventario');
+            updateUI(registros);
+        } catch (error) {
+            console.error('Erro ao carregar dados:', error);
+            updateUI([]);
+        }
+    }
+    
+    async function limparTodosDados() {
+        if (confirm('Limpar TODOS os dados de estoque?')) {
+            try {
+                const ids = registros.filter(r => r.tipo === 'estoque').map(r => r.id);
+                for (const id of ids) {
+                    await apiRequest('inventario-delete', 'POST', { id });
+                }
+                registros = registros.filter(r => r.tipo !== 'estoque');
+                updateUI(registros);
+                alert('Dados de estoque removidos.');
+            } catch (error) {
+                console.error('Erro ao limpar dados:', error);
+            }
+        }
+    }
+
+    window.onscroll = function() {
+        if (!scrollBtn) return;
+        const nearBottom = (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100;
+        if (nearBottom) {
+            scrollBtn.textContent = "↑";
+            scrollBtn.title = "Voltar ao topo";
+            scrollBtn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            scrollBtn.textContent = "↓";
+            scrollBtn.title = "Ir para a tabela";
+            scrollBtn.onclick = () => document.querySelector('.table-container').scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+    
+    document.addEventListener('DOMContentLoaded', ()=>{ 
+        ['inputCodigo', 'inputDescricao', 'inputMaterial', 'inputCliente'].forEach(id => {
+            document.getElementById(id).addEventListener('input', function() { this.value = this.value.toUpperCase(); });
+        }); 
+        
+        document.querySelectorAll('thead .filter-row input').forEach(input => {
+            input.addEventListener('input', applyColumnFilters);
+        });
+
+        document.getElementById('csvFileInput').addEventListener('change', importCSV);
+
+        carregarDados(); 
+    });
+</script>
+</body>
+</html>
