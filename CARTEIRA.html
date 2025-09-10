@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Carteira de Pedidos - Fundição Erus</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+    <style>
+        /* === NOVOS ESTILOS PARA TELA DE CARREGAMENTO === */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--primary-blue);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        .loading-logo {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+        
+        .loading-text {
+            color: white;
+            font-size: 16px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        :root {
+            --primary-blue: #2c3e50;
+            --secondary-blue: #3498db;
+            --accent-blue: #2980b9;
+            --dark-blue: #1a2530;
+            --light-gray: #ecf0f1;
+            --medium-gray: #bdc3c7;
+            --dark-gray: #7f8c8d;
+            --border-color: #95a5a6;
+            --success-color: #27ae60;
+            --warning-color: #e67e22;
+            --danger-color: #c0392b;
+        }
+        
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Courier New', monospace;
+        }
+        
+        body { 
+            background: var(--light-gray); 
+            color: #333; 
+            padding: 15px;
+            line-height: 1.4;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-y: auto; /* Permite rolagem na página inteira */
+        }
+        
+        .container { 
+            max-width: 1500px; 
+            margin: 0 auto; 
+            background: #fff; 
+            border-radius: 4px; 
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header { 
+            background: var(--primary-blue); 
+            color: #fff; 
+            padding: 15px 20px; 
+            text-align: center;
+            border-bottom: 3px solid var(--secondary-blue);
+            flex-shrink: 0;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-content {
+            flex: 1;
+        }
+        
+        h1 { 
+            font-size: 18px; 
+            margin-bottom: 3px;
+            letter-spacing: 0.5px;
+        }
+        
+        p.subtitle { 
+            margin-top: 4px; 
+            color: var(--light-gray); 
+            font-size: 12px;
+        }
+        
+        .header-button {
+            padding: 6px 10px; 
+            border: 1px solid var(--dark-blue); 
+            border-radius: 3px; 
+            cursor: pointer; 
+            background: var(--secondary-blue); 
+            color: #fff; 
+            transition: background .15s;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .header-button:hover { 
+            background: var(--accent-blue); 
+        }
+        
+        /* Painel de totais acima dos gráficos */
+        .totals-panel {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: var(--light-gray);
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .total-card {
+            flex: 1;
+            min-width: 180px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .total-card .label {
+            font-size: 12px;
+            color: var(--dark-gray);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .total-card .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+        
+        .total-card.delayed {
+            background-color: #ffebee;
+        }
+        
+        .total-card.delayed .value {
+            color: var(--danger-color);
+        }
+        
+        /* Nova seção de gráficos */
+        .charts-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .chart-container {
+            flex: 1;
+            min-width: 320px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 30px;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .chart-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--primary-blue);
+            font-size: 14px;
+        }
+        
+        .chart-canvas-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .controls { 
+            padding: 10px 15px; 
+            display: flex; 
+            gap: 8px; 
+            align-items: center; 
+            justify-content: space-between; 
+            background: var(--light-gray);
+            flex-wrap: wrap;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        
+        .left-controls { 
+            display: flex; 
+            gap: 6px; 
+            align-items: center; 
+            flex-wrap: wrap;
+        }
+        
+        input[type="text"], input[type="file"] { 
+            padding: 6px 8px; 
+            border: 1px solid var(--border-color); 
+            border-radius: 3px; 
+            font-size: 12px;
+            background: white;
+            font-family: 'Courier New', monospace;
+        }
+        
+        button { 
+            padding: 6px 10px; 
+            border: 1px solid var(--dark-blue); 
+            border-radius: 3px; 
+            cursor: pointer; 
+            background: var(--secondary-blue); 
+            color: #fff; 
+            transition: background .15s;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        button:hover { 
+            background: var(--accent-blue); 
+        }
+        
+        .btn-save { 
+            background: var(--success-color);
+            border-color: #1e8449;
+        }
+        
+        .btn-save:hover { 
+            background: #229954;
+        }
+        
+        .btn-add { 
+            background: var(--warning-color);
+            border-color: #bf6516;
+        }
+        
+        .btn-add:hover { 
+            background: #d35400;
+        }
+        
+        .btn-danger { 
+            background: var(--danger-color);
+            border-color: #922b21;
+        }
+        
+        .btn-danger:hover { 
+            background: #a93226;
+        }
+        
+        .btn-edit {
+            background: var(--warning-color);
+            border-color: #bf6516;
+        }
+        
+        .btn-edit:hover {
+            background: #d35400;
+        }
+        
+        .btn-link {
+            background: var(--accent-blue);
+            border-color: #1a5276;
+        }
+        
+        .btn-link:hover {
+            background: #2874a6;
+        }
+        
+        .btn-sort {
+            background: var(--dark-gray);
+            border-color: #7f8c8d;
+        }
+        
+        .btn-sort:hover {
+            background: #616a6b;
+        }
+        
+        .table-container { 
+            overflow: visible; /* Remove a barra de rolagem da tabela */
+            flex: 1;
+            min-height: 300px; /* Altura mínima para evitar que o footer suba */
+        }
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            min-width: 100px;
+            font-size: 12px;
+            table-layout: fixed; /* Adicionado para larguras fixas */
+        }
+        
+        th, td { 
+            padding: 8px 10px; 
+            border-bottom: 1px solid var(--border-color); 
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* LARGURAS FIXAS PARA AS COLUNAS - ATUALIZADO */
+        th:nth-child(1), td:nth-child(1) { width: 70px; }  /* PEDIDO */
+        th:nth-child(2), td:nth-child(2) { width: 100px; } /* ENTREGA */
+        th:nth-child(3), td:nth-child(3) { width: 180px; } /* RAZÃO SOCIAL */
+        th:nth-child(4), td:nth-child(4) { width: 90px; }  /* CÓDIGO */
+        th:nth-child(5), td:nth-child(5) { width: 210px; } /* NOME PRODUTO */
+        th:nth-child(6), td:nth-child(6) { width: 130px; } /* MATERIAL */
+        th:nth-child(7), td:nth-child(7) { width: 70px; }  /* SALDO */
+        th:nth-child(8), td:nth-child(8) { width: 70px; }  /* PESO (UN) */
+        th:nth-child(9), td:nth-child(9) { width: 70px; } /* TOTAL */
+        
+        thead tr.header-row th { 
+            background: var(--dark-blue); 
+            color: white;
+            position: sticky; 
+            top: 0; 
+            z-index: 20; 
+            font-weight: 600;
+            font-size: 12px;
+            padding: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        thead tr.filter-row th { 
+            background: var(--medium-gray);
+            padding: 6px;
+            position: sticky;
+            top: 37px; /* altura dos cabeçalhos - CORRIGIDO */
+            z-index: 15;
+        }
+        
+        thead tr.filter-row input { 
+            width: 100%; 
+            padding: 4px 6px; 
+            box-sizing: border-box; 
+            border-radius: 2px; 
+            border: 1px solid var(--border-color);
+            font-size: 11px;
+        }
+        
+        tr:nth-child(even) td { 
+            background: #f8f9f9; 
+        }
+        
+        tr:hover td { 
+            background: #eaf2f8; 
+        }
+        
+        td.editable { 
+            min-width: 70px;
+            border-right: 1px dotted var(--medium-gray);
+        }
+        
+        td.editable:focus { 
+            outline: 2px solid var(--secondary-blue); 
+            background: #fff; 
+        }
+        
+        .footer { 
+            padding: 10px 15px; 
+            background: var(--primary-blue); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            gap: 8px; 
+            flex-wrap: wrap;
+            border-top: 3px solid var(--secondary-blue);
+            color: white;
+            flex-shrink: 0;
+        }
+        
+        .status { 
+            font-size: 12px; 
+            color: #fff; 
+            font-weight: bold;
+        }
+        
+        .panel-totals { 
+            display: flex; 
+            gap: 10px; 
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .panel-card { 
+            background: rgba(255, 255, 255, 0.15); 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            padding: 6px 10px; 
+            border-radius: 3px; 
+            min-width: 140px; 
+            text-align: center;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+            color: white;
+        }
+        
+        .panel-card .label { 
+            font-size: 11px; 
+            color: var(--light-gray); 
+            font-weight: bold;
+        }
+        
+        .panel-card .value { 
+            font-size: 14px; 
+            font-weight: 700; 
+            margin-top: 4px;
+            color: #fff;
+        }
+        
+        /* Botões de navegação */
+        .nav-buttons {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .nav-button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--secondary-blue);
+            color: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-button:hover {
+            background-color: var(--accent-blue);
+            transform: translateY(-3px);
+        }
+        
+        .nav-button.hidden {
+            display: none;
+        }
+
+        /* === NOVOS ESTILOS PARA O POPUP === */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .popup-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .popup-content {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 800px; /* Aumentado para caber mais info */
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .popup-overlay.show .popup-content {
+            transform: scale(1);
+        }
+
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .popup-header h2 {
+            font-size: 16px;
+            color: var(--primary-blue);
+        }
+
+        .popup-close {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--dark-gray);
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+        
+        .popup-body {
+            overflow-y: auto;
+            display: flex;
+            gap: 20px;
+        }
+
+        .popup-section {
+            flex: 1;
+        }
+
+        .popup-section h3 {
+            font-size: 13px; /* Ajustado */
+            margin-bottom: 10px;
+            color: var(--primary-blue);
+            font-weight: bold;
+        }
+        
+        .popup-section h3.added {
+            color: var(--success-color);
+        }
+
+        .popup-section h3.removed {
+            color: var(--danger-color);
+        }
+
+        .popup-section ul {
+            list-style-type: none;
+            padding: 0;
+            max-height: 350px; /* Aumentado */
+            overflow-y: auto;
+        }
+
+        .popup-section ul li {
+            padding: 8px 6px; /* Aumentado */
+            border-bottom: 1px solid var(--light-gray);
+            font-size: 12px; /* Reduzido para caber mais texto */
+            line-height: 1.3;
+        }
+
+        /* Estilo para detalhes dentro do <li> */
+        .popup-section ul li .order-id {
+            font-weight: bold;
+            color: var(--primary-blue);
+        }
+        .popup-section ul li .order-details {
+            display: block;
+            font-size: 11px;
+            color: var(--dark-gray);
+            margin-top: 3px;
+        }
+        
+        .no-changes {
+            font-style: italic;
+            color: var(--dark-gray);
+            text-align: center;
+            width: 100%;
+            padding: 20px 0;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 10px;
+                font-size: 13px;
+            }
+            
+            .container { 
+                border-radius: 3px;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .totals-panel {
+                padding: 10px;
+                flex-direction: column;
+            }
+            
+            .total-card {
+                min-width: 100%;
+            }
+            
+            .charts-section {
+                padding: 10px;
+                flex-direction: column;
+            }
+            
+            .chart-container {
+                min-width: 100%;
+            }
+            
+            .controls {
+                padding: 8px 10px;
+            }
+            
+            thead tr.filter-row th {
+                top: 39px; /* Mantém a mesma altura em telas menores */
+            }
+            
+            .footer {
+                padding: 8px 10px;
+            }
+            
+            .panel-card {
+                min-width: 120px;
+                padding: 5px 8px;
+            }
+            
+            .panel-card .value {
+                font-size: 13px;
+            }
+            
+            .nav-buttons {
+                right: 15px;
+                bottom: 15px;
+            }
+            
+            .nav-button {
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
+            
+            /* Ajuste de larguras para telas menores */
+            th:nth-child(1), td:nth-child(1) { width: 60px; }
+            th:nth-child(2), td:nth-child(2) { width: 80px; }
+            th:nth-child(3), td:nth-child(3) { width: 150px; }
+            th:nth-child(4), td:nth-child(4) { width: 60px; }
+            th:nth-child(5), td:nth-child(5) { width: 150px; }
+            th:nth-child(6), td:nth-child(6) { width: 80px; }
+            th:nth-child(7), td:nth-child(7) { width: 60px; }
+            th:nth-child(8), td:nth-child(8) { width: 70px; }
+            th:nth-child(9), td:nth-child(9) { width: 80px; }
+        }
+        
+        @media (max-width: 600px) {
+            body {
+                padding: 5px;
+            }
+            
+            .charts-section {
+                padding: 8px;
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
+            
+            thead tr.filter-row th {
+                top: 54px; /* Mantém a mesma altura em telas menores */
+            }
+            
+            .left-controls, .controls {
+                gap: 4px;
+            }
+            
+            button {
+                padding: 5px 8px;
+                font-size: 11px;
+            }
+            
+            input[type="text"] {
+                max-width: 120px;
+            }
+            
+            .panel-totals {
+                gap: 5px;
+            }
+            
+            .panel-card {
+                min-width: 100px;
+                padding: 4px 6px;
+            }
+            
+            .panel-card .label {
+                font-size: 10px;
+            }
+            
+            .panel-card .value {
+                font-size: 12px;
+            }
+            
+            .nav-buttons {
+                right: 10px;
+                bottom: 10px;
+            }
+            
+            .nav-button {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+            
+            /* Ajuste de larguras para telas muito pequenas */
+            th:nth-child(1), td:nth-child(1) { width: 50px; }
+            th:nth-child(2), td:nth-child(2) { width: 70px; }
+            th:nth-child(3), td:nth-child(3) { width: 120px; }
+            th:nth-child(4), td:nth-child(4) { width: 50px; }
+            th:nth-child(5), td:nth-child(5) { width: 120px; }
+            th:nth-child(6), td:nth-child(6) { width: 70px; }
+            th:nth-child(7), td:nth-child(7) { width: 50px; }
+            th:nth-child(8), td:nth-child(8) { width: 60px; }
+            th:nth-child(9), td:nth-child(9) { width: 70px; }
+
+            .popup-body {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Carregando carteira de pedidos...</div>
+    </div>
+
+    <div class="container" style="display: none;">
+        <header>
+            <div class="header-content">
+                <h1>CARTEIRA DE PEDIDOS - FUNDIÇÃO ERUS</h1>
+                <p class="subtitle">Controle de pedidos - Tabela editável</p>
+            </div>
+            <button class="header-button" onclick="redirectToLink()">Sistema</button>
+        </header>
+
+        <div class="totals-panel">
+            <div class="total-card">
+                <div class="label">Total de Pedidos</div>
+                <div id="totalOrdersCard" class="value">0</div>
+            </div>
+            <div class="total-card">
+                <div class="label">Quantidade Total</div>
+                <div id="totalQuantityCard" class="value">0</div>
+            </div>
+            <div class="total-card">
+                <div class="label">Peso Total (kg)</div>
+                <div id="totalWeightCard" class="value">0.00</div>
+            </div>
+            <div class="total-card">
+                <div class="label">Peso Médio (kg)</div>
+                <div id="avgWeightCard" class="value">0.00</div>
+            </div>
+            <div class="total-card delayed">
+                <div class="label">Peso Atrasado (kg)</div>
+                <div id="delayedWeightCard" class="value">0.00</div>
+            </div>
+        </div>
+
+        <div class="charts-section">
+            <div class="chart-container">
+                <div class="chart-title">PESO TOTAL POR MÊS (kg)</div>
+                <div class="chart-canvas-container">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">PARETO - PESO POR CLIENTE</div>
+                <div class="chart-canvas-container">
+                    <canvas id="paretoChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls" id="controlsPanel">
+            <div class="left-controls">
+                <label for="excelFile" style="display:inline-block;">
+                    <input type="file" id="excelFile" accept=".xlsx" style="display:none" onchange="importExcel(event)">
+                    <button title="Importar Excel" onclick="document.getElementById('excelFile').click()">Importar</button>
+                </label>
+
+                <button class="btn-danger" id="clearBtn" title="Apagar TODOS os registros" onclick="confirmAndClear()">Apagar Tudo</button>
+            </div>
+
+            <div style="display:flex; gap:6px; align-items:center;">
+                <button class="btn-edit" id="editBtn" onclick="toggleEditMode()">Editar</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="ordersTable" role="table" aria-label="Tabela de pedidos">
+                <thead>
+                    <tr class="header-row">
+                        <th>PEDIDO</th>
+                        <th>ENTREGA</th>
+                        <th>RAZÃO SOCIAL</th>
+                        <th>CÓDIGO</th>
+                        <th>NOME PRODUTO</th>
+                        <th>MATERIAL</th>
+                        <th>SALDO</th>
+                        <th>PESO (UN)</th>
+                        <th>TOTAL</th>
+                    </tr>
+                    <tr class="filter-row">
+                        <th><input data-col="0" placeholder="Filtrar"/></th>
+                        <th><input data-col="1" placeholder="Filtrar"/></th>
+                        <th><input data-col="2" placeholder="Filtrar"/></th>
+                        <th><input data-col="3" placeholder="Filtrar"/></th>
+                        <th><input data-col="4" placeholder="Filtrar"/></th>
+                        <th><input data-col="5" placeholder="Filtrar"/></th>
+                        <th><input data-col="6" placeholder="Filtrar"/></th>
+                        <th><input data-col="7" placeholder="Filtrar"/></th>
+                        <th><input data-col="8" placeholder="Filtrar"/></th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <div class="status">Total de pedidos: <strong id="totalOrders">0</strong></div>
+            <div class="panel-totals">
+                <div class="panel-card">
+                    <div class="label">Quantidade Total</div>
+                    <div id="totalQuantity" class="value">0</div>
+                </div>
+                <div class="panel-card">
+                    <div class="label">Peso Total (kg)</div>
+                    <div id="totalWeight" class="value">0.00</div>
+                </div>
+                <div class="panel-card">
+                    <div class="label">Peso Médio (kg)</div>
+                    <div id="avgWeight" class="value">0.00</div>
+                </div>
+                <div class="panel-card" style="background-color: rgba(192, 57, 43, 0.3);">
+                    <div class="label">Peso Atrasado (kg)</div>
+                    <div id="delayedWeight" class="value">0.00</div>
+                </div>
+            </div>
+            <div>
+                <button onclick="exportData()" style="background: var(--secondary-blue);">Exportar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-buttons">
+        <button id="goToControlsBtn" class="nav-button hidden" title="Ir para controles">↓</button>
+        <button id="backToTopBtn" class="nav-button hidden" title="Voltar ao topo">↑</button>
+    </div>
+
+    <div id="changesPopup" class="popup-overlay">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h2>Alterações na Carteira de Pedidos</h2>
+                <button id="closePopupBtn" class="popup-close">&times;</button>
+            </div>
+            <div id="popupBody" class="popup-body">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // === CONFIGURAÇÕES IMPORTANTES DE COLUNAS ===
+        const COL_PEDIDO = 0; // PEDIDO
+        const COL_ENTREGA = 1; // DATA DE ENTREGA
+        const COL_RAZAO_SOCIAL = 2; // RAZÃO SOCIAL
+        const COL_NOME_PRODUTO = 4; // NOME PRODUTO
+        const COL_MATERIAL = 5; // MATERIAL
+        const COL_QUANT = 6;   // SALDO QUANT.
+        const COL_PESO_UN = 7; // PESO (UN)
+        const COL_PESO_TOTAL = 8; // PESO TOTAL
+        let isEditMode = false;
+        
+        // Variáveis para os gráficos
+        let monthlyChart = null;
+        let paretoChart = null;
+
+        // === FUNÇÃO PARA OCULTAR A TELA DE CARREGAMENTO ===
+        function hideLoadingScreen() {
+            const loadingScreen = document.getElementById('loading-screen');
+            const mainContent = document.querySelector('.container');
+            
+            loadingScreen.style.opacity = '0';
+            
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                mainContent.style.display = 'flex';
+            }, 500);
+        }
+
+        // --- Função utilitária para formatar número com 2 decimais ---
+        function formatNumber(value){
+            if (value === null || value === undefined || isNaN(value)) return '0,00';
+            return Number(value).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+        }
+
+        // --- Parse seguro de número que aceita vários formatos ---
+        function parseNumberSafe(text){
+            if (text === null || text === undefined) return 0;
+            let s = String(text).trim();
+            if (s === '') return 0;
+            s = s.replace(/\s+/g, '');
+            const hasDot = s.indexOf('.') > -1;
+            const hasComma = s.indexOf(',') > -1;
+
+            if (hasDot && hasComma) {
+                s = s.replace(/\./g, '').replace(/,/g, '.');
+            } else if (!hasDot && hasComma) {
+                s = s.replace(/,/g, '.');
+            }
+            s = s.replace(/[^0-9.\-]/g, '');
+            const num = parseFloat(s);
+            return isNaN(num) ? 0 : num;
+        }
+
+        // --- Função para converter data em formato brasileiro para objeto Date ---
+        function parseDate(dateString) {
+            if (!dateString) return new Date(0);
+            
+            const formats = [
+                /(\d{2})\/(\d{2})\/(\d{4})/, // dd/mm/yyyy
+                /(\d{2})-(\d{2})-(\d{4})/,   // dd-mm-yyyy
+                /(\d{4})-(\d{2})-(\d{2})/,   // yyyy-mm-dd
+                /(\d{4})\/(\d{2})\/(\d{2})/    // yyyy/mm/dd
+            ];
+            
+            let day, month, year;
+            
+            for (const format of formats) {
+                const match = dateString.match(format);
+                if (match) {
+                    if (format === formats[0] || format === formats[1]) {
+                        day = parseInt(match[1], 10);
+                        month = parseInt(match[2], 10) - 1;
+                        year = parseInt(match[3], 10);
+                    } else {
+                        year = parseInt(match[1], 10);
+                        month = parseInt(match[2], 10) - 1;
+                        day = parseInt(match[3], 10);
+                    }
+                    
+                    if (year > 0 && month >= 0 && month <= 11 && day > 0 && day <= 31) {
+                        return new Date(year, month, day);
+                    }
+                }
+            }
+            
+            return new Date(0);
+        }
+
+        // --- Função para extrair o primeiro nome de uma razão social ---
+        function getFirstName(razaoSocial) {
+            if (!razaoSocial) return '';
+            
+            razaoSocial = razaoSocial.trim();
+            const suffixes = ['LTDA', 'EIRELI', 'ME', 'S/A', 'SA', 'COMERCIO', 'COMÉRCIO', 'INDUSTRIA', 'INDÚSTRIA'];
+            
+            for (const suffix of suffixes) {
+                const regex = new RegExp('\\s*' + suffix + '\\s*$', 'i');
+                razaoSocial = razaoSocial.replace(regex, '');
+            }
+            
+            const firstSpace = razaoSocial.indexOf(' ');
+            if (firstSpace > 0) {
+                return razaoSocial.substring(0, firstSpace);
+            }
+            
+            return razaoSocial;
+        }
+
+        // --- Função para calcular o peso atrasado ---
+        function calculateDelayedWeight() {
+            const rows = document.querySelectorAll('#ordersTable tbody tr');
+            let delayedWeight = 0;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            rows.forEach(tr => {
+                const cells = tr.querySelectorAll('td');
+                const dateText = cells[COL_ENTREGA].textContent;
+                const weightText = cells[COL_PESO_TOTAL].textContent;
+                
+                if (dateText && weightText) {
+                    const deliveryDate = parseDate(dateText);
+                    const weight = parseNumberSafe(weightText);
+                    
+                    if (deliveryDate < today && deliveryDate.getTime() !== 0) {
+                        delayedWeight += weight;
+                    }
+                }
+            });
+            
+            return delayedWeight;
+        }
+
+        // --- Função para ordenar a tabela por data de entrega ---
+        function sortByDate() {
+            const tbody = document.querySelector('#ordersTable tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            rows.sort((a, b) => {
+                const dateA = parseDate(a.cells[COL_ENTREGA].textContent);
+                const dateB = parseDate(b.cells[COL_ENTREGA].textContent);
+                return dateA - dateB;
+            });
+            
+            while (tbody.firstChild) {
+                tbody.removeChild(tbody.firstChild);
+            }
+            
+            rows.forEach(row => tbody.appendChild(row));
+            
+            updateOrderCount();
+            applyColumnFilters();
+            updateCharts();
+        }
+
+        // --- Funções de atualização de gráficos ---
+        function updateCharts() {
+            updateMonthlyChart();
+            updateParetoChart();
+        }
+
+        function updateMonthlyChart() {
+            const rows = document.querySelectorAll('#ordersTable tbody tr');
+            const monthlyData = {};
+            const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            for (let i = 0; i < 12; i++) {
+                monthlyData[i] = 0;
+            }
+            
+            rows.forEach(tr => {
+                const cells = tr.querySelectorAll('td');
+                const dateText = cells[COL_ENTREGA].textContent;
+                const weightText = cells[COL_PESO_TOTAL].textContent;
+                
+                if (dateText && weightText) {
+                    const date = parseDate(dateText);
+                    const weight = parseNumberSafe(weightText);
+                    if (date.getFullYear() > 2000) {
+                        const month = date.getMonth();
+                        monthlyData[month] += weight;
+                    }
+                }
+            });
+            
+            const labels = monthNames;
+            const data = Object.values(monthlyData);
+            
+            if (monthlyChart) {
+                monthlyChart.destroy();
+            }
+            
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            monthlyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Peso Total (kg)', 
+                        data: data,
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Peso (kg)' } },
+                        x: { title: { display: true, text: 'Mês' } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: context => `Peso: ${formatNumber(context.raw)} kg`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateParetoChart() {
+            const rows = document.querySelectorAll('#ordersTable tbody tr');
+            const clientData = {};
+            const fullNames = {};
+            
+            rows.forEach(tr => {
+                const cells = tr.querySelectorAll('td');
+                const razaoSocial = cells[COL_RAZAO_SOCIAL].textContent.trim();
+                const weightText = cells[COL_PESO_TOTAL].textContent;
+                
+                if (razaoSocial && weightText) {
+                    const weight = parseNumberSafe(weightText);
+                    const firstName = getFirstName(razaoSocial);
+                    
+                    if (!clientData[firstName]) {
+                        clientData[firstName] = 0;
+                        fullNames[firstName] = razaoSocial;
+                    }
+                    clientData[firstName] += weight;
+                }
+            });
+            
+            const clientArray = Object.entries(clientData)
+                .map(([client, weight]) => ({ client, weight, fullName: fullNames[client] }))
+                .sort((a, b) => b.weight - a.weight);
+            
+            const topClients = clientArray.slice(0, 10);
+            const totalWeight = clientArray.reduce((sum, item) => sum + item.weight, 0);
+            
+            let cumulativePercentage = 0;
+            const paretoData = topClients.map(item => {
+                const percentage = (item.weight / totalWeight) * 100;
+                cumulativePercentage += percentage;
+                return {
+                    client: item.client,
+                    fullName: item.fullName,
+                    weight: item.weight,
+                    cumulativePercentage: cumulativePercentage
+                };
+            });
+            
+            const labels = paretoData.map(item => item.client);
+            const weightData = paretoData.map(item => item.weight);
+            const cumulativeData = paretoData.map(item => item.cumulativePercentage);
+            
+            if (paretoChart) {
+                paretoChart.destroy();
+            }
+            
+            const ctx = document.getElementById('paretoChart').getContext('2d');
+            paretoChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Peso (kg)', data: weightData, backgroundColor: 'rgba(52, 152, 219, 0.7)', yAxisID: 'y' },
+                        { label: 'Percentual Acumulado', data: cumulativeData, type: 'line', fill: false, borderColor: 'rgba(231, 76, 60, 1)', borderWidth: 2, pointRadius: 4, yAxisID: 'y1' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Peso (kg)' }, beginAtZero: true },
+                        y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Percentual Acumulado (%)' }, min: 0, max: 100, grid: { drawOnChartArea: false } },
+                        x: { ticks: { maxRotation: 45, minRotation: 45 } }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: context => paretoData[context[0].dataIndex].fullName,
+                                label: context => {
+                                    const label = context.dataset.label || '';
+                                    return label.includes('Peso') ? `Peso: ${formatNumber(context.raw)} kg` : `Acumulado: ${formatNumber(context.raw)}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Atualiza contadores / painéis ---
+        function updateOrderCount(){
+            const count = document.querySelectorAll('#ordersTable tbody tr').length;
+            document.getElementById('totalOrders').textContent = count;
+            document.getElementById('totalOrdersCard').textContent = count;
+            updateTotals();
+            updateCharts();
+        }
+
+        function updateTotals(){
+            const rows = document.querySelectorAll('#ordersTable tbody tr');
+            let totalQty = 0;
+            let totalWeight = 0;
+
+            rows.forEach(tr=>{
+                const cells = tr.querySelectorAll('td');
+                const qText = (cells[COL_QUANT] && cells[COL_QUANT].textContent) ? cells[COL_QUANT].textContent : '';
+                const wtText = (cells[COL_PESO_TOTAL] && cells[COL_PESO_TOTAL].textContent) ? cells[COL_PESO_TOTAL].textContent : '';
+                const wUnitText = (cells[COL_PESO_UN] && cells[COL_PESO_UN].textContent) ? cells[COL_PESO_UN].textContent : '';
+                const qty = parseNumberSafe(qText);
+                let weight = parseNumberSafe(wtText);
+
+                if ((wtText === null || String(wtText).trim() === '') && qty > 0) {
+                    const pesoUn = parseNumberSafe(wUnitText);
+                    weight = qty * (isNaN(pesoUn) ? 0 : pesoUn);
+                    if (cells[COL_PESO_TOTAL]) {
+                        cells[COL_PESO_TOTAL].textContent = formatNumber(weight);
+                    }
+                }
+
+                totalQty += (isNaN(qty) ? 0 : qty);
+                totalWeight += (isNaN(weight) ? 0 : weight);
+            });
+
+            const formattedTotalQty = Number(totalQty).toLocaleString('pt-BR');
+            const formattedTotalWeight = formatNumber(totalWeight);
+            const avg = (totalQty === 0) ? 0 : (totalWeight / totalQty);
+            const formattedAvg = formatNumber(avg);
+            const delayedWeight = calculateDelayedWeight();
+            const formattedDelayedWeight = formatNumber(delayedWeight);
+
+            document.getElementById('totalQuantity').textContent = formattedTotalQty;
+            document.getElementById('totalWeight').textContent = formattedTotalWeight;
+            document.getElementById('avgWeight').textContent = formattedAvg;
+            document.getElementById('delayedWeight').textContent = formattedDelayedWeight;
+            
+            document.getElementById('totalQuantityCard').textContent = formattedTotalQty;
+            document.getElementById('totalWeightCard').textContent = formattedTotalWeight;
+            document.getElementById('avgWeightCard').textContent = formattedAvg;
+            document.getElementById('delayedWeightCard').textContent = formattedDelayedWeight;
+
+            saveToServer();
+        }
+
+        // --- Filtros por coluna ---
+        document.querySelectorAll('thead .filter-row input').forEach(inp=>{
+            inp.addEventListener('input', applyColumnFilters);
+        });
+
+        function applyColumnFilters(){
+            const inputs = document.querySelectorAll('thead .filter-row input');
+            const filters = Array.from(inputs).map(i => i.value.trim().toUpperCase());
+            const rows = document.querySelectorAll('#ordersTable tbody tr');
+            rows.forEach(row=>{
+                const cells = row.getElementsByTagName('td');
+                let visible = true;
+                for (let i = 0; i < filters.length; i++){
+                    if (!filters[i]) continue;
+                    const cellText = (cells[i] && cells[i].textContent) ? cells[i].textContent.toUpperCase() : '';
+                    if (cellText.indexOf(filters[i]) === -1){
+                        visible = false;
+                        break;
+                    }
+                }
+                row.style.display = visible ? '' : 'none';
+            });
+        }
+
+        // --- Adicionar nova linha vazia ---
+        function addRow(){
+            const tbody = document.querySelector('#ordersTable tbody');
+            const tr = document.createElement('tr');
+            for (let i = 0; i < 9; i++){
+                const td = document.createElement('td');
+                td.className = 'editable';
+                td.contentEditable = isEditMode;
+                td.textContent = '';
+                tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+            updateOrderCount();
+            saveToServer();
+        }
+
+        // --- Apagar toda a tabela com confirmação de senha ---
+        function confirmAndClear(){
+            const pass = prompt('Digite a senha para apagar TODOS os registros:');
+            if (pass === null) return;
+            if (pass.trim() === 'CONFIRMAR'){
+                if (!confirm('Confirmar apagamento de TODOS os registros? Esta ação não pode ser desfeita.')) return;
+                const tbody = document.querySelector('#ordersTable tbody');
+                tbody.innerHTML = '';
+                updateOrderCount();
+                saveToServer();
+                alert('Tabela apagada.');
+            } else {
+                alert('Senha incorreta. Ação cancelada.');
+            }
+        }
+
+        // --- Salvar e Carregar dados via API (simulado, ajustar URLs) ---
+        async function saveToServer() {
+            const rows = document.querySelectorAll('#ordersTable tbody tr');
+            const data = Array.from(rows).map(row => ({
+                pedido: row.cells[0].textContent,
+                entrega: row.cells[1].textContent,
+                razao_social: row.cells[2].textContent,
+                codigo: row.cells[3].textContent,
+                nome_produto: row.cells[4].textContent,
+                material: row.cells[5].textContent,
+                saldo: parseNumberSafe(row.cells[6].textContent),
+                peso_un: parseNumberSafe(row.cells[7].textContent),
+                peso_total: parseNumberSafe(row.cells[8].textContent)
+            }));
+            
+            try {
+                // SUBSTITUIR PELA URL REAL DA API
+                const response = await fetch('/api/save-carteira', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) console.error('Erro ao salvar no servidor.');
+            } catch (error) {
+                console.error('Erro de rede ao salvar:', error);
+            }
+        }
+
+        async function loadDataFromServer() {
+            try {
+                 // SUBSTITUIR PELA URL REAL DA API
+                const response = await fetch('/api/carteira');
+                if (!response.ok) throw new Error('Erro ao buscar dados.');
+                const data = await response.json();
+                
+                const tbody = document.querySelector('#ordersTable tbody');
+                tbody.innerHTML = '';
+                
+                data.forEach(rowData => {
+                    const tr = document.createElement('tr');
+                    const values = [
+                        rowData.pedido, rowData.entrega, rowData.razao_social,
+                        rowData.codigo, rowData.nome_produto, rowData.material,
+                        String(rowData.saldo), String(rowData.peso_un), String(rowData.peso_total)
+                    ];
+                    values.forEach(cellData => {
+                        const td = document.createElement('td');
+                        td.className = 'editable';
+                        td.contentEditable = isEditMode;
+                        td.textContent = cellData;
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+                
+                sortByDate();
+                updateOrderCount();
+                applyColumnFilters();
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                alert('Não foi possível conectar ao servidor para carregar a carteira.');
+            }
+        }
+        
+        // --- Modo de edição ---
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            const editBtn = document.getElementById('editBtn');
+            editBtn.textContent = isEditMode ? 'Sair da Edição' : 'Editar';
+            editBtn.classList.toggle('btn-save', isEditMode);
+            editBtn.classList.toggle('btn-edit', !isEditMode);
+
+            if (!isEditMode) saveToServer();
+            
+            document.querySelectorAll('#ordersTable tbody td').forEach(cell => {
+                cell.contentEditable = isEditMode;
+            });
+        }
+
+        // --- Redirecionar ---
+        function redirectToLink() {
+            window.location.href = 'dashboard.html';
+        }
+
+        // --- Exportar dados (placeholder) ---
+        function exportData(){
+            alert('Exportar dados - função de exemplo.');
+        }
+
+        // --- NOVA LÓGICA DO POPUP (MODIFICADO) ---
+        function showChangesPopup(addedOrders, removedOrders, totalAddedWeight, totalRemovedWeight) {
+            const popupOverlay = document.getElementById('changesPopup');
+            const popupBody = document.getElementById('popupBody');
+            popupBody.innerHTML = '';
+
+            if (addedOrders.length === 0 && removedOrders.length === 0) {
+                popupBody.innerHTML = '<div class="no-changes">Não foram adicionados ou faturados novos pedidos.</div>';
+            } else {
+                let content = '';
+                if (addedOrders.length > 0) {
+                    content += `
+                        <div class="popup-section">
+                            <h3 class="added">
+                                Pedidos Adicionados (${addedOrders.length})<br>
+                                Peso Total: ${formatNumber(totalAddedWeight)} kg
+                            </h3>
+                            <ul>${addedOrders.map(order => `
+                                <li>
+                                    <span class="order-id">Pedido: ${order.id}</span>
+                                    <span class="order-details">
+                                        ${order.description || 'Sem descrição'} <br> 
+                                        Qtd: ${order.quantity || 0} | Material: ${order.material || 'N/A'}
+                                    </span>
+                                </li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+                if (removedOrders.length > 0) {
+                    content += `
+                        <div class="popup-section">
+                            <h3 class="removed">
+                                Pedidos Faturados (${removedOrders.length})<br>
+                                Peso Total: ${formatNumber(totalRemovedWeight)} kg
+                            </h3>
+                            <ul>${removedOrders.map(order => `
+                                <li>
+                                    <span class="order-id">Pedido: ${order.id}</span>
+                                    <span class="order-details">
+                                        ${order.description || 'Sem descrição'} <br>
+                                        Qtd: ${order.quantity || 0} | Material: ${order.material || 'N/A'}
+                                    </span>
+                                </li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+                popupBody.innerHTML = content;
+            }
+
+            popupOverlay.classList.add('show');
+        }
+        
+        // --- FUNÇÃO PARA OBTER OS DADOS ATUAIS DA TABELA (MODIFICADO) ---
+        function getCurrentOrderData() {
+            const orderData = new Map();
+            const rows = document.querySelectorAll('#ordersTable tbody tr');
+            rows.forEach(row => {
+                const orderId = row.cells[COL_PEDIDO].textContent.trim();
+                if (orderId) {
+                    const data = {
+                        id: orderId,
+                        description: row.cells[COL_NOME_PRODUTO].textContent.trim(),
+                        quantity: row.cells[COL_QUANT].textContent.trim(),
+                        material: row.cells[COL_MATERIAL].textContent.trim(),
+                        weight: row.cells[COL_PESO_TOTAL].textContent.trim()
+                    };
+                    orderData.set(orderId, data);
+                }
+            });
+            return orderData;
+        }
+
+
+        // --- Importar Excel (MODIFICADO) ---
+        function importExcel(event){
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const beforeOrderData = getCurrentOrderData();
+
+            const reader = new FileReader();
+            reader.onload = function(e){
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header:1 });
+                const tbody = document.querySelector('#ordersTable tbody');
+                tbody.innerHTML = '';
+
+                let start = 0;
+                if (rows.length > 0){
+                    const firstRow = rows[0].map(c => String(c || '').toString().toUpperCase());
+                    if (firstRow.some(h => /PEDIDO|ENTREGA|RAZÃO|RAZAO|PESO|QUANT|QUANTIDADE/i.test(h))) start = 1;
+                }
+
+                const afterOrderData = new Map();
+                
+                for (let r = start; r < rows.length; r++){
+                    const row = rows[r];
+                    const tr = document.createElement('tr');
+                    
+                    const orderId = (row && row[COL_PEDIDO] !== undefined && row[COL_PEDIDO] !== null) ? String(row[COL_PEDIDO]).trim() : '';
+                    if (orderId) {
+                        const orderDetails = {
+                            id: orderId,
+                            description: (row[COL_NOME_PRODUTO] || '').toString().trim(),
+                            quantity: (row[COL_QUANT] || '').toString().trim(),
+                            material: (row[COL_MATERIAL] || '').toString().trim(),
+                            weight: (row[COL_PESO_TOTAL] || '0').toString().trim()
+                        };
+                        afterOrderData.set(orderId, orderDetails);
+                    }
+                    
+                    for (let c = 0; c < 9; c++){
+                        const td = document.createElement('td');
+                        td.className = 'editable';
+                        td.contentEditable = isEditMode;
+                        td.textContent = (row && row[c] !== undefined && row[c] !== null) ? String(row[c]) : '';
+                        tr.appendChild(td);
+                    }
+                    tbody.appendChild(tr);
+                }
+                
+                const addedOrders = [];
+                afterOrderData.forEach((value, key) => {
+                    if (!beforeOrderData.has(key)) {
+                        addedOrders.push(value);
+                    }
+                });
+
+                const removedOrders = [];
+                beforeOrderData.forEach((value, key) => {
+                    if (!afterOrderData.has(key)) {
+                        removedOrders.push(value);
+                    }
+                });
+
+                const totalAddedWeight = addedOrders.reduce((sum, order) => sum + parseNumberSafe(order.weight), 0);
+                const totalRemovedWeight = removedOrders.reduce((sum, order) => sum + parseNumberSafe(order.weight), 0);
+                
+                showChangesPopup(addedOrders, removedOrders, totalAddedWeight, totalRemovedWeight);
+
+                sortByDate();
+                updateOrderCount();
+                applyColumnFilters();
+                saveToServer();
+            };
+            reader.readAsArrayBuffer(file);
+            event.target.value = '';
+        }
+
+
+        // --- Funções de navegação ---
+        function scrollToControls() {
+            document.getElementById('controlsPanel').scrollIntoView({ behavior: 'smooth' });
+        }
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        function checkScrollPosition() {
+            const goToControlsBtn = document.getElementById('goToControlsBtn');
+            const backToTopBtn = document.getElementById('backToTopBtn');
+            const scrollPosition = window.scrollY || document.documentElement.scrollTop;
+            
+            if (scrollPosition < 100) {
+                goToControlsBtn.classList.remove('hidden');
+                backToTopBtn.classList.add('hidden');
+            } else {
+                goToControlsBtn.classList.add('hidden');
+                backToTopBtn.classList.remove('hidden');
+            }
+        }
+
+        // --- Delegação de eventos ---
+        const tbody = document.querySelector('#ordersTable tbody');
+        tbody.addEventListener('input', () => updateTotals());
+        tbody.addEventListener('paste', () => {
+            setTimeout(()=> { 
+                updateTotals(); 
+                applyColumnFilters(); 
+                updateOrderCount(); 
+            }, 50);
+        });
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Delete' && document.activeElement && document.activeElement.tagName === 'TD'){
+                setTimeout(() => updateTotals(), 50);
+            }
+        });
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function(){
+            setTimeout(() => {
+                hideLoadingScreen();
+                loadDataFromServer();
+                
+                document.querySelectorAll('thead .filter-row input').forEach(input => {
+                    input.addEventListener('input', applyColumnFilters);
+                });
+                
+                // Eventos do Popup
+                const popupOverlay = document.getElementById('changesPopup');
+                document.getElementById('closePopupBtn').addEventListener('click', () => popupOverlay.classList.remove('show'));
+                popupOverlay.addEventListener('click', (e) => {
+                    if (e.target === popupOverlay) {
+                        popupOverlay.classList.remove('show');
+                    }
+                });
+
+                // Botões de navegação
+                document.getElementById('goToControlsBtn').addEventListener('click', scrollToControls);
+                document.getElementById('backToTopBtn').addEventListener('click', scrollToTop);
+                window.addEventListener('scroll', checkScrollPosition);
+                checkScrollPosition();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
